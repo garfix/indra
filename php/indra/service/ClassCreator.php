@@ -53,7 +53,7 @@ class ClassCreator
             $classNameBase = $matches[2];
 
             foreach (['Type', 'Model', ''] as $item) {
-                $fileName = $item == '' ? 'Class' : $item;
+                $fileName = $item == '' ? 'Instance' : $item;
                 $template = file_get_contents(__DIR__ . '/../template/' . $fileName . '.php.txt');
 
                 $className = $classNameBase . $item;

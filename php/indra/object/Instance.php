@@ -32,6 +32,14 @@ class Instance
     }
 
     /**
+     * @return string An indra identifier.
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    /**
      * @return Type
      */
     public function getType()

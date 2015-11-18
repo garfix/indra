@@ -9,15 +9,5 @@ use indra\object\Instance;
  */
 class {{ className }} extends Instance
 {
-    protected $id;
-
-    /**
-     * @return string An indra identifier.
-     */
-    public function getId()
-    {
-        return $this->id;
-    }
-
 {{ attributes }}
 }
