@@ -1,0 +1,15 @@
+    /**
+     * @return $this
+     */
+    public function set{{ attributeName }}($attribute)
+    {
+        $this->attributes['{{ attribute }}'] = $attribute;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function get{{ attributeName }}()
+    {
+        return isset($this->attributes['{{ attribute }}']) ? $this->attributes['{{ attribute }}'] : null;
+    }

@@ -1,0 +1,23 @@
+<?php
+
+namespace {{ namespace }};
+
+use indra\object\Instance;
+
+/**
+ * This class was auto-generated. Do not change it, for it will be overwritten.
+ */
+class {{ className }} extends Instance
+{
+    protected $id;
+
+    /**
+     * @return string An indra identifier.
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+{{ attributes }}
+}

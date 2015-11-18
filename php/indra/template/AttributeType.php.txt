@@ -1,0 +1,4 @@
+        $id = '{{ attributeId }}';
+        $attribute = new Attribute($id);
+        $attribute->setName('{{ attribute }}');
+        $this->attributes[$id] = $attribute;

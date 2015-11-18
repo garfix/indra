@@ -1,0 +1,65 @@
+- data versioning, branching, merging
+- multiple inheritance
+- snel
+- object-georienteerde revisies
+- multilingual
+- sets
+- lists
+- typen hebben geen intrinsieke 'semantische' eigenschappen, zoals naam of titel
+- typen kun je in de code hernoemen zonder dat er iets in de database hoeft te veranderen
+- bij een (zware) update actie wordt de repo gelockd. Als er dan een actie wordt uitgevoerd, krijgt de gebruiker een foutmelding ('probeer het nog eens').
+- gebruik geen string-constanten in applicatie code
+- het is ok dat je een business object niet mag wijzigen. De business rules horen elders. Waar?
+- het is een idee dat de gebruiker helemaal niet queriet uit de triple tabellen. alleen de views zijn toegestaan.
+
+# Views
+
+insert -> add to all views
+update -> update to all views
+remove -> remove from all views
+insert revision undo -> remove from all views
+update revision undo -> update all views
+remove revision undo -> add to all views
+
+Een revisie mag alleen ongedaan worden als het objecten bevat die daarna niet meer voorkomen in andere revisies.
+
+Voorbeeld view:
+
+Customer
+
+- name
+
+Category
+
+- name.fr_FR
+- name.en_EN
+
+Customer
+
+- parents
+
+Misschien moet je array-attributen maar gewoon uitsluiten... je kunt ze niet materialiseren.
+Je kunt hier misschien andere constructies voor maken.
+
+Objecten opslaan als JSON?
+
+uuid uuid uuid int
+uuid uuid uuid varchar
+uuid uuid uuid text
+uuid uuid uuid date
+uuid uuid uuid datetime
+uuid uuid uuid time
+
+table indra_active_int;
+table indra_passive_int;
+
+table indra_revision;
+timestamp
+triple_id
+action: add/remove
+description
+
+table indra_revision_triple;
+triple_id, time,
+
+table indra_revision_int;

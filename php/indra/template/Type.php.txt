@@ -1,0 +1,25 @@
+<?php
+
+namespace {{ namespace }};
+
+use indra\object\Attribute;
+use indra\object\Type;
+
+/**
+ * This class was auto-generated. Do not change it, for it will be overwritten.
+ */
+class {{ className }} extends Type
+{
+    public function __construct()
+    {
+{{ attributeTypes }}
+    }
+
+    /**
+     * @return Attribute
+     */
+    public function getAttributeById($id)
+    {
+        return $this->attributes[$id];
+    }
+}

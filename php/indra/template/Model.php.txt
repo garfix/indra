@@ -1,0 +1,38 @@
+<?php
+
+namespace {{ namespace }};
+
+use indra\service\Context;
+
+/**
+ * This class was auto-generated. Do not change it, for it will be overwritten.
+ */
+class {{ className }}
+{
+    /**
+     * @return {{ typeName }}
+     */
+    public function create()
+    {
+        return new {{ typeName }}($this->getType());
+    }
+
+    public function save({{ typeName }} $instance)
+    {
+        Context::getTripleStore()->save($instance);
+    }
+
+    public function load($indraId)
+    {
+        $object = $this->create();
+        Context::getTripleStore()->load($object, $indraId);
+        return $object;
+    }
+
+    private $type;
+
+    private function getType()
+    {
+        return $this->type ?: $this->type = new {{ typeClassName }};
+    }
+}
