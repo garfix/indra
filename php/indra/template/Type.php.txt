@@ -14,12 +14,4 @@ class {{ className }} extends Type
     {
 {{ typeAttributes }}
     }
-
-    /**
-     * @return Attribute
-     */
-    public function getAttributeById($id)
-    {
-        return $this->attributes[$id];
-    }
 }

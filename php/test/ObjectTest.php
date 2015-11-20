@@ -57,4 +57,25 @@ class CreateObjectTest extends TestBase
         $this->assertEquals('Dr. Livingstone', $name);
     }
 
+    public function testRemoveObject()
+    {
+        $model = new CustomerModel();
+
+        $customer = $model->create();
+        $customer->setName('Dr. Jones');
+        $model->save($customer);
+        $id = $customer->getId();
+
+        $model->remove($customer);
+
+        $exception = false;
+
+        try {
+            $model->load($id);
+        } catch (Exception $e) {
+            $exception = true;
+        }
+
+        $this->assertTrue($exception);
+    }
 }

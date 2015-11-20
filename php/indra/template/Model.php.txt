@@ -15,21 +15,26 @@ class {{ className }}
      */
     public function create()
     {
-        $instance = new {{ typeName }}($this->getType());
-        $instance->setId(IdGenerator::generateId());
-        return $instance;
+        $object = new {{ typeName }}($this->getType());
+        $object->setId(IdGenerator::generateId());
+        return $object;
     }
 
-    public function save({{ typeName }} $instance)
+    public function save({{ typeName }} $object)
     {
-        Context::getTripleStore()->save($instance);
+        Context::getTripleStore()->save($object);
     }
 
     public function load($indraId)
     {
-        $instance = new {{ typeName }}($this->getType());
-        Context::getTripleStore()->load($instance, $indraId);
-        return $instance;
+        $object = new {{ typeName }}($this->getType());
+        Context::getTripleStore()->load($object, $indraId);
+        return $object;
+    }
+
+    public function remove({{ typeName }} $object)
+    {
+        Context::getTripleStore()->remove($object);
     }
 
     private $type;

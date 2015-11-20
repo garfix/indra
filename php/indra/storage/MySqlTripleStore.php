@@ -2,6 +2,8 @@
 
 namespace indra\storage;
 
+use Exception;
+use indra\exception\ObjectNotFoundException;
 use indra\object\Object;
 use indra\service\Context;
 use indra\service\IdGenerator;
@@ -11,11 +13,9 @@ use indra\service\IdGenerator;
  */
 class MySqlTripleStore implements TripleStore
 {
-    public function createBasicTables()
+    private function getTypeInformation()
     {
-        $mysqli = Context::getMySqli();
-
-        $types = [
+        return [
             'int' => [
                 'type' => 'int',
                 'encoding' => '',
@@ -52,8 +52,21 @@ class MySqlTripleStore implements TripleStore
                 'key' => 'value(32)',
             ],
         ];
+    }
 
-        foreach ($types as $name => $info) {
+    /**
+     * @return string[]
+     */
+    public function getAllDataTypes()
+    {
+        return array_keys($this->getTypeInformation());
+    }
+
+    public function createBasicTables()
+    {
+        $mysqli = Context::getMySqli();
+
+        foreach ($this->getTypeInformation() as $name => $info) {
             foreach (['active', 'passive'] as $state) {
 
                 $mysqli->query("
@@ -91,13 +104,13 @@ class MySqlTripleStore implements TripleStore
         ");
     }
 
-    public function save(Object $instance)
+    public function save(Object $object)
     {
         $mysqli = Context::getMySqli();
 
-        $type = $instance->getType();
-        $attributeValues = $instance->getAttributeValues();
-        $objectId = $instance->getId();
+        $type = $object->getType();
+        $attributeValues = $object->getAttributeValues();
+        $objectId = $object->getId();
 
         foreach ($type->getAttributes() as $attribute) {
 
@@ -108,27 +121,33 @@ class MySqlTripleStore implements TripleStore
                 $dataType = $attribute->getDataType();
                 $tripleId = IdGenerator::generateId();
 
-                $mysqli->query("
+                $q = "
                   INSERT INTO indra_active_" . $dataType . "
                   SET
                     `triple_id` = '" . $tripleId . "',
                     `object_id` = '" . $objectId . "',
                     `attribute_id` = '" . $attributeId . "',
                     `value` = '" . mysqli_real_escape_string($mysqli, $attributeValue) . "'
-                ");
+                ";
+
+#                var_dump($q);
+
+                $mysqli->query($q);
             }
         }
     }
 
-    public function load(Object $instance, $objectId)
+    public function load(Object $object, $objectId)
     {
         $mysqli = Context::getMySqli();
 
-        $instance->setId($objectId);
+        $object->setId($objectId);
 
-        $type = $instance->getType();
+        $type = $object->getType();
+
+        // find the applicable data types of the type
+        // (we want to minimize the number of queries)
         $dataTypes = [];
-
         foreach ($type->getAttributes() as $attribute) {
             $dataTypes[$attribute->getDataType()] = $attribute->getDataType();
         }
@@ -144,15 +163,63 @@ class MySqlTripleStore implements TripleStore
             ");
 
             if ($resultSet) {
-
                 while ($result = $resultSet->fetch_assoc()) {
-
                     $attributeName = $type->getAttributeById($result['attribute_id'])->getName();
                     $attributeValues[$attributeName] = $result['value'];
                 }
+            } else {
+                throw new Exception();
             }
         }
 
-        $instance->setAttributeValues($attributeValues);
+        if (empty($attributeValues)) {
+            throw new ObjectNotFoundException();
+        }
+
+        $object->setAttributeValues($attributeValues);
+    }
+
+    public function remove(Object $object)
+    {
+        $mysqli = Context::getMySqli();
+
+        $objectId = $object->getId();
+
+        foreach ($this->getAllDataTypes() as $dataType) {
+
+            $resultSet = $mysqli->query("
+                SELECT `triple_id`, `object_id`, `attribute_id`, `value` FROM indra_active_" . $dataType . "
+                WHERE
+                    `object_id` = '" . $objectId . "'
+            ");
+
+            if ($resultSet) {
+                while ($result = $resultSet->fetch_assoc()) {
+
+                    $tripleId = $result['triple_id'];
+                    $objectId = $result['object_id'];
+                    $attributeId = $result['attribute_id'];
+                    $attributeValue = $result['value'];
+
+                    $mysqli->query("
+                        INSERT INTO indra_inactive_" . $dataType . "
+                        SET
+                            `triple_id` = '" . $tripleId . "',
+                            `object_id` = '" . $objectId . "',
+                            `attribute_id` = '" . $attributeId . "',
+                            `value` = '" . mysqli_real_escape_string($mysqli, $attributeValue) . "'
+                    ");
+
+                    $mysqli->query("
+                        DELETE FROM indra_active_" . $dataType . "
+                        WHERE
+                            `triple_id` = '" . $tripleId . "'
+                    ");
+
+                }
+            } else {
+                throw new Exception();
+            }
+        }
     }
 }

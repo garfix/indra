@@ -8,6 +8,8 @@ use indra\service\TableCreator;
  */
 class TestBase extends PHPUnit_Framework_TestCase
 {
+    const REMOVE_GENERATED_CLASSES = true;
+
     public static function setUpBeforeClass()
     {
         require_once __DIR__ . '/../autoloader.php';
@@ -31,9 +33,11 @@ class TestBase extends PHPUnit_Framework_TestCase
 
     public static function tearDownAfterClass()
     {
-        @unlink(__DIR__ . '/my_module/customer/Customer.php');
-        @unlink(__DIR__ . '/my_module/customer/CustomerModel.php');
-        @unlink(__DIR__ . '/my_module/customer/CustomerType.php');
+        if (self::REMOVE_GENERATED_CLASSES) {
+            @unlink(__DIR__ . '/my_module/customer/Customer.php');
+            @unlink(__DIR__ . '/my_module/customer/CustomerModel.php');
+            @unlink(__DIR__ . '/my_module/customer/CustomerType.php');
+        }
 
         $mysqli = Context::getMySqli();
         $mysqli->close();

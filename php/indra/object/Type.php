@@ -28,4 +28,12 @@ class Type
     {
         return $this->attributes;
     }
+
+    /**
+     * @return Attribute
+     */
+    public function getAttributeById($id)
+    {
+        return $this->attributes[$id];
+    }
 }

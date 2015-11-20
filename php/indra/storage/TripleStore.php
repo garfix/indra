@@ -15,12 +15,12 @@ interface TripleStore
      */
     public function createBasicTables();
 
-    public function load(Object $instance, $indraId);
+    public function load(Object $object, $indraId);
 
     /**
-     * @param Object $instance
+     * @param Object $object
      * @return void
      * @throws Exception
      */
-    public function save(Object $instance);
+    public function save(Object $object);
 }
