@@ -3,6 +3,7 @@
 namespace indra\service;
 
 use Exception;
+use indra\storage\DB;
 use indra\storage\MySqlTripleStore;
 use indra\storage\TripleStore;
 use mysqli;
@@ -20,6 +21,9 @@ class Context
 {
     /** @var  mysqli */
     private static $mysqli;
+    
+    /** @var  DB */
+    private static $db;
 
     /** @var  TripleStore */
     private static $TripleStore;
@@ -62,6 +66,22 @@ class Context
         }
 
         return self::$mysqli;
+    }
+
+    /**
+     * @param DB $DB
+     */
+    public static function setDB(DB $DB)
+    {
+        self::$db = $DB;
+    }
+
+    /**
+     * @return DB
+     */
+    public static function getDB()
+    {
+        return self::$db ?: self::$db = new DB();
     }
 
     /**

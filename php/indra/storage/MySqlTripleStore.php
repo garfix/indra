@@ -64,12 +64,12 @@ class MySqlTripleStore implements TripleStore
 
     public function createBasicTables()
     {
-        $mysqli = Context::getMySqli();
+        $db = Context::getDB();
 
         foreach ($this->getTypeInformation() as $name => $info) {
-            foreach (['active', 'passive'] as $state) {
+            foreach (['active', 'inactive'] as $state) {
 
-                $mysqli->query("
+                $db->execute("
                     CREATE TABLE IF NOT EXISTS indra_{$state}_{$name} (
                         `triple_id` char(20) not null,
                         `object_id` char(20) not null,
@@ -83,7 +83,7 @@ class MySqlTripleStore implements TripleStore
             }
         }
 
-        $mysqli->query("
+        $db->execute("
             CREATE TABLE IF NOT EXISTS indra_revision (
 					`revision_id`				char(20) not null,
 					`revision_datetime` 		datetime not null,
@@ -94,7 +94,7 @@ class MySqlTripleStore implements TripleStore
             ) engine InnoDB
         ");
 
-        $mysqli->query("
+        $db->execute("
             CREATE TABLE IF NOT EXISTS indra_revision_action (
 					`revision_id`				char(20) not null,
 					`triple_id`					char(20) not null,
@@ -106,7 +106,7 @@ class MySqlTripleStore implements TripleStore
 
     public function save(Object $object)
     {
-        $mysqli = Context::getMySqli();
+        $db = Context::getDB();
 
         $type = $object->getType();
         $attributeValues = $object->getAttributeValues();
@@ -121,25 +121,21 @@ class MySqlTripleStore implements TripleStore
                 $dataType = $attribute->getDataType();
                 $tripleId = IdGenerator::generateId();
 
-                $q = "
-                  INSERT INTO indra_active_" . $dataType . "
-                  SET
-                    `triple_id` = '" . $tripleId . "',
-                    `object_id` = '" . $objectId . "',
-                    `attribute_id` = '" . $attributeId . "',
-                    `value` = '" . mysqli_real_escape_string($mysqli, $attributeValue) . "'
-                ";
-
-#                var_dump($q);
-
-                $mysqli->query($q);
+                $db->execute("
+                    INSERT INTO indra_active_" . $dataType . "
+                    SET
+                        `triple_id` = '" . $tripleId . "',
+                        `object_id` = '" . $objectId . "',
+                        `attribute_id` = '" . $attributeId . "',
+                        `value` = '" . $db->esc($attributeValue) . "'
+                ");
             }
         }
     }
 
     public function load(Object $object, $objectId)
     {
-        $mysqli = Context::getMySqli();
+        $db = Context::getDB();
 
         $object->setId($objectId);
 
@@ -156,19 +152,15 @@ class MySqlTripleStore implements TripleStore
 
         foreach ($dataTypes as $dataType) {
 
-            $resultSet = $mysqli->query("
+            $results = $db->queryMultipleRows("
               SELECT `attribute_id`, `value` FROM indra_active_" . $dataType . "
               WHERE
                 `object_id` = '" . $objectId . "'
             ");
 
-            if ($resultSet) {
-                while ($result = $resultSet->fetch_assoc()) {
-                    $attributeName = $type->getAttributeById($result['attribute_id'])->getName();
-                    $attributeValues[$attributeName] = $result['value'];
-                }
-            } else {
-                throw new Exception();
+            foreach ($results as $result) {
+                $attributeName = $type->getAttributeById($result['attribute_id'])->getName();
+                $attributeValues[$attributeName] = $result['value'];
             }
         }
 
@@ -181,44 +173,40 @@ class MySqlTripleStore implements TripleStore
 
     public function remove(Object $object)
     {
-        $mysqli = Context::getMySqli();
+        $db = Context::getDB();
 
         $objectId = $object->getId();
 
         foreach ($this->getAllDataTypes() as $dataType) {
 
-            $resultSet = $mysqli->query("
+            $results = $db->queryMultipleRows("
                 SELECT `triple_id`, `object_id`, `attribute_id`, `value` FROM indra_active_" . $dataType . "
                 WHERE
                     `object_id` = '" . $objectId . "'
             ");
 
-            if ($resultSet) {
-                while ($result = $resultSet->fetch_assoc()) {
+            foreach ($results as $result) {
 
-                    $tripleId = $result['triple_id'];
-                    $objectId = $result['object_id'];
-                    $attributeId = $result['attribute_id'];
-                    $attributeValue = $result['value'];
+                $tripleId = $result['triple_id'];
+                $objectId = $result['object_id'];
+                $attributeId = $result['attribute_id'];
+                $attributeValue = $result['value'];
 
-                    $mysqli->query("
-                        INSERT INTO indra_inactive_" . $dataType . "
-                        SET
-                            `triple_id` = '" . $tripleId . "',
-                            `object_id` = '" . $objectId . "',
-                            `attribute_id` = '" . $attributeId . "',
-                            `value` = '" . mysqli_real_escape_string($mysqli, $attributeValue) . "'
-                    ");
+                $db->execute("
+                    INSERT INTO indra_inactive_" . $dataType . "
+                    SET
+                        `triple_id` = '" . $tripleId . "',
+                        `object_id` = '" . $objectId . "',
+                        `attribute_id` = '" . $attributeId . "',
+                        `value` = '" . $db->esc($attributeValue) . "'
+                ");
 
-                    $mysqli->query("
-                        DELETE FROM indra_active_" . $dataType . "
-                        WHERE
-                            `triple_id` = '" . $tripleId . "'
-                    ");
+                $db->execute("
+                    DELETE FROM indra_active_" . $dataType . "
+                    WHERE
+                        `triple_id` = '" . $tripleId . "'
+                ");
 
-                }
-            } else {
-                throw new Exception();
             }
         }
     }
