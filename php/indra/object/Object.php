@@ -7,7 +7,7 @@ namespace indra\object;
  *
  * @author Patrick van Bergen
  */
-class Instance
+class Object
 {
     /** @var  Type */
     protected $type;

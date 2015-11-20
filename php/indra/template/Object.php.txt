@@ -2,12 +2,12 @@
 
 namespace {{ namespace }};
 
-use indra\object\Instance;
+use indra\object\Object;
 
 /**
  * This class was auto-generated. Do not change it, for it will be overwritten.
  */
-class {{ className }} extends Instance
+class {{ className }} extends Object
 {
 {{ attributes }}
 }

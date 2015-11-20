@@ -2,7 +2,7 @@
 
 namespace indra\storage;
 
-use indra\object\Instance;
+use indra\object\Object;
 use indra\service\Context;
 use indra\service\IdGenerator;
 
@@ -91,7 +91,7 @@ class MySqlTripleStore implements TripleStore
         ");
     }
 
-    public function save(Instance $instance)
+    public function save(Object $instance)
     {
         $mysqli = Context::getMySqli();
 
@@ -120,7 +120,7 @@ class MySqlTripleStore implements TripleStore
         }
     }
 
-    public function load(Instance $instance, $objectId)
+    public function load(Object $instance, $objectId)
     {
         $mysqli = Context::getMySqli();
 

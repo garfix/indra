@@ -12,7 +12,7 @@ class {{ className }} extends Type
 {
     public function __construct()
     {
-{{ attributeTypes }}
+{{ typeAttributes }}
     }
 
     /**

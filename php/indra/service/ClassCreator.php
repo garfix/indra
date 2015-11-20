@@ -33,9 +33,9 @@ class ClassCreator
             $attributes .= str_replace(array_keys($replacements), array_values($replacements), $attributeTemplate);
         }
 
-        $attributeTemplate = file_get_contents(__DIR__ . '/../template/AttributeType.php.txt');
+        $attributeTemplate = file_get_contents(__DIR__ . '/../template/TypeAttribute.php.txt');
 
-        $attributeTypes = "";
+        $typeAttributes = "";
 
         foreach ($type->getAttributes() as $attribute) {
 
@@ -44,7 +44,7 @@ class ClassCreator
                 '{{ attributeId }}' => $attribute->getId(),
             ];
 
-            $attributeTypes .= str_replace(array_keys($replacements), array_values($replacements), $attributeTemplate);
+            $typeAttributes .= str_replace(array_keys($replacements), array_values($replacements), $attributeTemplate);
         }
 
         if (preg_match('/^(.*)\\\\(.*)Picket$/', $locatorClass, $matches)) {
@@ -61,7 +61,7 @@ class ClassCreator
             }
 
             foreach (['Type', 'Model', ''] as $item) {
-                $fileName = $item == '' ? 'Instance' : $item;
+                $fileName = $item == '' ? 'Object' : $item;
                 $template = file_get_contents(__DIR__ . '/../template/' . $fileName . '.php.txt');
 
                 $className = $classNameBase . $item;
@@ -71,7 +71,7 @@ class ClassCreator
                     '{{ className }}' => $className,
                     '{{ typeName }}' => $classNameBase,
                     '{{ attributes }}' => $attributes,
-                    '{{ attributeTypes }}' => $attributeTypes,
+                    '{{ typeAttributes }}' => $typeAttributes,
                     '{{ typeClassName }}' => $classNameBase . "Type",
                 ];
                 $contents = str_replace(array_keys($replacements), array_values($replacements), $template);

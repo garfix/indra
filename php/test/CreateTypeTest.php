@@ -6,9 +6,9 @@ use indra\service\ClassCreator;
 use indra\object\Type;
 use indra\service\Context;
 use indra\service\TableCreator;
-use my_module\customer\CustomerType;
 use PHPUnit_Framework_TestCase;
 use my_module\customer\CustomerPicket;
+use my_module\customer\CustomerType;
 use my_module\customer\Customer;
 
 /**

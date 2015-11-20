@@ -3,7 +3,7 @@
 namespace indra\storage;
 
 use Exception;
-use indra\object\Instance;
+use indra\object\Object;
 
 /**
  * @author Patrick van Bergen
@@ -15,12 +15,12 @@ interface TripleStore
      */
     public function createBasicTables();
 
-    public function load(Instance $instance, $indraId);
+    public function load(Object $instance, $indraId);
 
     /**
-     * @param Instance $instance
+     * @param Object $instance
      * @return void
      * @throws Exception
      */
-    public function save(Instance $instance);
+    public function save(Object $instance);
 }
