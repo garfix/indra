@@ -3,6 +3,7 @@
 namespace {{ namespace }};
 
 use indra\service\Context;
+use indra\service\IdGenerator;
 
 /**
  * This class was auto-generated. Do not change it, for it will be overwritten.
@@ -14,7 +15,9 @@ class {{ className }}
      */
     public function create()
     {
-        return new {{ typeName }}($this->getType());
+        $instance = new {{ typeName }}($this->getType());
+        $instance->setId(IdGenerator::generateId());
+        return $instance;
     }
 
     public function save({{ typeName }} $instance)
@@ -24,9 +27,9 @@ class {{ className }}
 
     public function load($indraId)
     {
-        $object = $this->create();
-        Context::getTripleStore()->load($object, $indraId);
-        return $object;
+        $instance = new {{ typeName }}($this->getType());
+        Context::getTripleStore()->load($instance, $indraId);
+        return $instance;
     }
 
     private $type;

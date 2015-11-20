@@ -1,6 +1,6 @@
 <?php
 
-namespace indra\temp\testdir;
+namespace my_module\customer;
 
 /**
  * @author Patrick van Bergen

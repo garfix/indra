@@ -97,9 +97,7 @@ class MySqlTripleStore implements TripleStore
 
         $type = $instance->getType();
         $attributeValues = $instance->getAttributeValues();
-
-        $objectId = IdGenerator::generateId();
-        $instance->setId($objectId);
+        $objectId = $instance->getId();
 
         foreach ($type->getAttributes() as $attribute) {
 

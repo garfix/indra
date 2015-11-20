@@ -12,7 +12,7 @@ class ClassCreator
 {
     /**
      * @param $locatorClass
-     * @return Type
+     * @param Type $type
      */
     public function createClasses($locatorClass, Type $type)
     {
@@ -51,6 +51,14 @@ class ClassCreator
 
             $path = $matches[1];
             $classNameBase = $matches[2];
+
+            if (file_exists($locatorClassPath . '/' . $classNameBase . 'Type.php')) {
+
+                # do not overwrite the type file, because it contains generated identifiers
+
+                return;
+
+            }
 
             foreach (['Type', 'Model', ''] as $item) {
                 $fileName = $item == '' ? 'Instance' : $item;

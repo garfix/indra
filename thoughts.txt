@@ -11,6 +11,8 @@
 - gebruik geen string-constanten in applicatie code
 - het is ok dat je een business object niet mag wijzigen. De business rules horen elders. Waar?
 - het is een idee dat de gebruiker helemaal niet queriet uit de triple tabellen. alleen de views zijn toegestaan.
+- foutmeldingen: overal exceptions
+- een object krijgt bij creatie al een id
 
 # Views
 
