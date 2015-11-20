@@ -1,40 +1,26 @@
 <?php
 
-namespace test;
-
-use indra\service\ClassCreator;
 use indra\object\Type;
-use indra\service\Context;
-use indra\service\TableCreator;
-use my_module\customer\Customer;
+use indra\service\ClassCreator;
 use my_module\customer\CustomerModel;
-use PHPUnit_Framework_TestCase;
 use my_module\customer\CustomerPicket;
+
+require __DIR__ . '/TestBase.php';
 
 /**
  * @author Patrick van Bergen
  */
-class CreateObjectTest extends PHPUnit_Framework_TestCase
+class CreateObjectTest extends TestBase
 {
     public static function setUpBeforeClass()
     {
-        require_once __DIR__ . '/../autoloader.php';
-        require_once __DIR__ . '/my_module/test_autoloader.php';
-
-        $tableCreator = new TableCreator();
-        $tableCreator->createBasicTables();
-
-        $type = new Type();
-        $type->addAttribute('name');
+        parent::setUpBeforeClass();
 
         $classCreator = new ClassCreator();
-        $classCreator->createClasses(CustomerPicket::class, $type);
-    }
 
-    public function setUp()
-    {
-        $mysqli = Context::getMySqli();
-        $mysqli->autocommit(false);
+        $type = new Type();
+        $type->addAttribute('name')->setDataTypeVarchar();
+        $classCreator->createClasses(CustomerPicket::class, $type);
     }
 
     public function testCreateObject()
@@ -71,19 +57,4 @@ class CreateObjectTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('Dr. Livingstone', $name);
     }
 
-    public function tearDown()
-    {
-        $mysqli = Context::getMySqli();
-        $mysqli->rollback();
-    }
-
-    public static function tearDownAfterClass()
-    {
-//        unlink(__DIR__ . '/../temp/testdir/Customer.php');
-//        unlink(__DIR__ . '/../temp/testdir/CustomerModel.php');
-//        unlink(__DIR__ . '/../temp/testdir/CustomerType.php');
-
-        $mysqli = Context::getMySqli();
-        $mysqli->close();
-    }
 }
