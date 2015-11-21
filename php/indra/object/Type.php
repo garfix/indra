@@ -2,7 +2,7 @@
 
 namespace indra\object;
 
-use indra\service\IdGenerator;
+use indra\service\Context;
 
 /**
  * @author Patrick van Bergen
@@ -13,7 +13,7 @@ class Type
 
     public function addAttribute($name)
     {
-        $attribute = new Attribute(IdGenerator::generateId());
+        $attribute = new Attribute(Context::getIdGenerator()->generateId());
         $attribute->setName($name);
 
         $this->attributes[$name] = $attribute;

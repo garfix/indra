@@ -2,6 +2,7 @@
 
 namespace indra\service;
 
+use Exception;
 use indra\object\Type;
 use ReflectionClass;
 
@@ -13,11 +14,13 @@ class ClassCreator
     /**
      * @param $locatorClass
      * @param Type $type
+     * @throws Exception
      */
     public function createClasses($locatorClass, Type $type)
     {
         $reflector = new ReflectionClass($locatorClass);
         $locatorClassPath = dirname($reflector->getFileName());
+        $classId = Context::getIdGenerator()->generateId();
 
         $attributeTemplate = file_get_contents(__DIR__ . '/../template/Attribute.php.txt');
 
@@ -69,6 +72,7 @@ class ClassCreator
                 $replacements = [
                     '{{ namespace }}' => $path,
                     '{{ className }}' => $className,
+                    '{{ classId }}' => $classId,
                     '{{ typeName }}' => $classNameBase,
                     '{{ attributes }}' => $attributes,
                     '{{ typeAttributes }}' => $typeAttributes,
@@ -80,9 +84,7 @@ class ClassCreator
             }
 
         } else {
-
+            throw new Exception('Locator class name should end on "Picket"');
         }
-
-
     }
 }

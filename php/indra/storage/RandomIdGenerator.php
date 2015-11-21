@@ -1,16 +1,13 @@
 <?php
 
-namespace indra\service;
+namespace indra\storage;
 
 /**
  * @author Patrick van Bergen
  */
-class IdGenerator
+class RandomIdGenerator implements IdGenerator
 {
-    /**
-     * @return string A string of 20 random upper and lower case letters, and numbers.
-     */
-    public static function generateId()
+    public function generateId()
     {
         $id = '';
         $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

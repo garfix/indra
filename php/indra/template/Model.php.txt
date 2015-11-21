@@ -3,7 +3,6 @@
 namespace {{ namespace }};
 
 use indra\service\Context;
-use indra\service\IdGenerator;
 
 /**
  * This class was auto-generated. Do not change it, for it will be overwritten.
@@ -16,7 +15,7 @@ class {{ className }}
     public function create()
     {
         $object = new {{ typeName }}($this->getType());
-        $object->setId(IdGenerator::generateId());
+        $object->setId(Context::getIdGenerator()->generateId());
         return $object;
     }
 

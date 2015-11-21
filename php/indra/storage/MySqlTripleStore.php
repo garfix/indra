@@ -2,11 +2,9 @@
 
 namespace indra\storage;
 
-use Exception;
 use indra\exception\ObjectNotFoundException;
 use indra\object\Object;
 use indra\service\Context;
-use indra\service\IdGenerator;
 
 /**
  * @author Patrick van Bergen
@@ -119,7 +117,7 @@ class MySqlTripleStore implements TripleStore
                 $attributeValue = $attributeValues[$attribute->getName()];
                 $attributeId = $attribute->getId();
                 $dataType = $attribute->getDataType();
-                $tripleId = IdGenerator::generateId();
+                $tripleId = Context::getIdGenerator()->generateId();
 
                 $db->execute("
                     INSERT INTO indra_active_" . $dataType . "

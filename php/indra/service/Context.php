@@ -3,13 +3,17 @@
 namespace indra\service;
 
 use Exception;
+use indra\exception\DataBaseException;
 use indra\storage\DB;
+use indra\storage\IdGenerator;
 use indra\storage\MySqlTripleStore;
+use indra\storage\RandomIdGenerator;
 use indra\storage\TripleStore;
 use mysqli;
 
 /**
  * This place stores all major dependencies.
+ *
  * It is an implementation of the Ambient Context dependency pattern.
  * The class should not be used to add variable dependencies, to avoid the Service Locator pattern.
  *
@@ -26,15 +30,35 @@ class Context
     private static $db;
 
     /** @var  TripleStore */
-    private static $TripleStore;
+    private static $tripleStore;
+
+    /** @var  IdGenerator */
+    private static $idGenerator;
 
     /**
      * Removes all services. After this, if a new service is requested, it will be created anew.
      */
     public static function resetAllServices()
     {
-        self::$TripleStore = null;
+        self::$tripleStore = null;
         self::$mysqli = null;
+        self::$idGenerator = null;
+    }
+
+    /**
+     * @param IdGenerator $idGenerator
+     */
+    public static function setIdGenerator(IdGenerator $idGenerator)
+    {
+        self::$idGenerator = $idGenerator;
+    }
+
+    /**
+     * @return RandomIdGenerator
+     */
+    public static function getIdGenerator()
+    {
+        return self::$idGenerator ?: self::$idGenerator = new RandomIdGenerator();
     }
 
     /**
@@ -58,7 +82,7 @@ class Context
             $mysqli = new mysqli($ini['database']['host'], $ini['database']['username'], $ini['database']['password'], $ini['database']['db']);
 
             if ($mysqli->connect_errno) {
-                throw new Exception("Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error);
+                throw new DataBaseException("Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error);
             }
 
             self::$mysqli = $mysqli;
@@ -85,11 +109,11 @@ class Context
     }
 
     /**
-     * @param TripleStore $TripleStore
+     * @param TripleStore $tripleStore
      */
-    public static function setTripleStore(TripleStore $TripleStore)
+    public static function setTripleStore(TripleStore $tripleStore)
     {
-        self::$TripleStore = $TripleStore;
+        self::$tripleStore = $tripleStore;
     }
 
     /**
@@ -97,6 +121,6 @@ class Context
      */
     public static function getTripleStore()
     {
-        return self::$TripleStore ?: self::$TripleStore = new MySqlTripleStore();
+        return self::$tripleStore ?: self::$tripleStore = new MySqlTripleStore();
     }
 }
