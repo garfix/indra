@@ -3,7 +3,7 @@
 namespace indra\service;
 
 use Exception;
-use indra\object\TypeDefinition;
+use indra\definition\TypeDefinition;
 use ReflectionClass;
 
 /**
@@ -13,10 +13,10 @@ class ClassCreator
 {
     /**
      * @param $locatorClass
-     * @param TypeDefinition $type
+     * @param TypeDefinition $typeDefinition
      * @throws Exception
      */
-    public function createClasses($locatorClass, TypeDefinition $type)
+    public function createClasses($locatorClass, TypeDefinition $typeDefinition)
     {
         $reflector = new ReflectionClass($locatorClass);
         $locatorClassPath = dirname($reflector->getFileName());
@@ -26,7 +26,7 @@ class ClassCreator
 
         $attributes = "";
 
-        foreach ($type->getAttributes() as $attribute) {
+        foreach ($typeDefinition->getAttributes() as $attribute) {
 
             $replacements = [
                 '{{ attribute }}' => $attribute->getName(),
@@ -40,7 +40,7 @@ class ClassCreator
 
         $typeAttributes = "";
 
-        foreach ($type->getAttributes() as $attribute) {
+        foreach ($typeDefinition->getAttributes() as $attribute) {
 
             $replacements = [
                 '{{ attribute }}' => $attribute->getName(),

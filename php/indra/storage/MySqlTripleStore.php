@@ -2,7 +2,9 @@
 
 namespace indra\storage;
 
+use indra\exception\ObjectCreationError;
 use indra\exception\ObjectNotFoundException;
+use indra\object\Attribute;
 use indra\object\Object;
 use indra\object\Type;
 use indra\service\Context;
@@ -12,6 +14,9 @@ use indra\service\Context;
  */
 class MySqlTripleStore implements TripleStore
 {
+    /** @const 20 characters */
+    const ATTRIBUTE_TYPE_ID = 'type----------------';
+
     private function getTypeInformation()
     {
         return [
@@ -111,37 +116,13 @@ class MySqlTripleStore implements TripleStore
         $attributeValues = $object->getAttributeValues();
         $objectId = $object->getId();
 
-        $attributeValues[Type::ATTRIBUTE_ID] = $type->getId();
+        // type
+        $this->writeTriple($objectId, self::ATTRIBUTE_TYPE_ID, $type->getId(), Attribute::TYPE_VARCHAR);
 
+        // attributes
         foreach ($type->getAttributes() as $attribute) {
-
             if (isset($attributeValues[$attribute->getName()])) {
-
-                $attributeValue = $attributeValues[$attribute->getName()];
-                $attributeId = $attribute->getId();
-                $dataType = $attribute->getDataType();
-                $tripleId = Context::getIdGenerator()->generateId();
-
-                $exists = $db->querySingleCell("
-                    SELECT COUNT(*)
-                    FROM indra_active_" . $dataType . "
-                    WHERE
-                        `object_id` = '" . $objectId . "' AND
-                        `attribute_id` = '" . $attributeId . "' AND
-                        `value` = '" . $db->esc($attributeValue) . "'
-                ");
-
-                if (!$exists) {
-
-                    $db->execute("
-                        INSERT INTO indra_active_" . $dataType . "
-                        SET
-                            `triple_id` = '" . $tripleId . "',
-                            `object_id` = '" . $objectId . "',
-                            `attribute_id` = '" . $attributeId . "',
-                            `value` = '" . $db->esc($attributeValue) . "'
-                    ");
-                }
+                $this->writeTriple($objectId, $attribute->getId(), $attributeValues[$attribute->getName()], $attribute->getDataType());
             }
         }
     }
@@ -149,21 +130,14 @@ class MySqlTripleStore implements TripleStore
     public function load(Object $object, $objectId)
     {
         $db = Context::getDB();
+        $type = $object->getType();
 
         $object->setId($objectId);
 
-        $type = $object->getType();
-
-        // find the applicable data types of the type
-        // (we want to minimize the number of queries)
-        $dataTypes = [];
-        foreach ($type->getAttributes() as $attribute) {
-            $dataTypes[$attribute->getDataType()] = $attribute->getDataType();
-        }
-
         $attributeValues = [];
+        $typeFound = false;
 
-        foreach ($dataTypes as $dataType) {
+        foreach ($this->getDataTypesOfType($type) as $dataType) {
 
             $results = $db->queryMultipleRows("
               SELECT `attribute_id`, `value` FROM indra_active_" . $dataType . "
@@ -172,9 +146,26 @@ class MySqlTripleStore implements TripleStore
             ");
 
             foreach ($results as $result) {
-                $attributeName = $type->getAttributeById($result['attribute_id'])->getName();
-                $attributeValues[$attributeName] = $result['value'];
+
+                if ($result['attribute_id'] == self::ATTRIBUTE_TYPE_ID) {
+
+                    // type is not stored as an attribute, but only checked for correctness
+
+                    if ($result['value'] == $type->getId()) {
+                        $typeFound = true;
+                    }
+
+                } else {
+
+                    $attributeName = $type->getAttributeById($result['attribute_id'])->getName();
+                    $attributeValues[$attributeName] = $result['value'];
+
+                }
             }
+        }
+
+        if (!$typeFound) {
+            throw new ObjectCreationError('No object of this type and id found.');
         }
 
         if (empty($attributeValues)) {
@@ -182,6 +173,25 @@ class MySqlTripleStore implements TripleStore
         }
 
         $object->setAttributeValues($attributeValues);
+    }
+
+    /**
+     * Returns all datatypes that are actually used by $type.
+     * (we want to minimize the number of queries)
+     *
+     * @param Type $type
+     * @return string[]
+     */
+    private function getDataTypesOfType(Type $type)
+    {
+        // The varchar table contains the type
+        $dataTypes = [Attribute::TYPE_VARCHAR => Attribute::TYPE_VARCHAR];
+
+        foreach ($type->getAttributes() as $attribute) {
+            $dataTypes[$attribute->getDataType()] = $attribute->getDataType();
+        }
+
+        return $dataTypes;
     }
 
     public function remove(Object $object)
@@ -221,6 +231,41 @@ class MySqlTripleStore implements TripleStore
                 ");
 
             }
+        }
+    }
+
+    /**
+     * @param $objectId
+     * @param $attributeId
+     * @param $attributeValue
+     * @param $dataType
+     * @throws \indra\exception\DataBaseException
+     */
+    public function writeTriple($objectId, $attributeId, $attributeValue, $dataType)
+    {
+        $db = Context::getDB();
+
+        $tripleId = Context::getIdGenerator()->generateId();
+
+        $exists = $db->querySingleCell("
+                    SELECT COUNT(*)
+                    FROM indra_active_" . $dataType . "
+                    WHERE
+                        `object_id` = '" . $objectId . "' AND
+                        `attribute_id` = '" . $attributeId . "' AND
+                        `value` = '" . $db->esc($attributeValue) . "'
+                ");
+
+        if (!$exists) {
+
+            $db->execute("
+                        INSERT INTO indra_active_" . $dataType . "
+                        SET
+                            `triple_id` = '" . $tripleId . "',
+                            `object_id` = '" . $objectId . "',
+                            `attribute_id` = '" . $attributeId . "',
+                            `value` = '" . $db->esc($attributeValue) . "'
+                    ");
         }
     }
 }

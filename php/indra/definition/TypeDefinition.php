@@ -1,7 +1,8 @@
 <?php
 
-namespace indra\object;
+namespace indra\definition;
 
+use indra\object\Attribute;
 use indra\service\Context;
 
 /**
@@ -13,6 +14,10 @@ class TypeDefinition
 {
     protected $attributes = [];
 
+    /**
+     * @param string $name
+     * @return Attribute
+     */
     public function addAttribute($name)
     {
         $attribute = new Attribute(Context::getIdGenerator()->generateId());

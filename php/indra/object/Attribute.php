@@ -38,6 +38,7 @@ class Attribute
     public function setName($name)
     {
         $this->properties['name'] = $name;
+        return $this;
     }
 
     public function getName()
@@ -51,6 +52,7 @@ class Attribute
     public function setDataTypeVarchar()
     {
         $this->properties['dataType'] = self::TYPE_VARCHAR;
+        return $this;
     }
 
     public function getDataType()

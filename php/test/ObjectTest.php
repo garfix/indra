@@ -1,6 +1,6 @@
 <?php
 
-use indra\object\TypeDefinition;
+use indra\definition\TypeDefinition;
 use indra\service\ClassCreator;
 use my_module\customer\CustomerModel;
 use my_module\customer\CustomerPicket;

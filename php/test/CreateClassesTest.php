@@ -16,7 +16,7 @@ class CreateTypeTest extends TestBase
     {
         $classCreator = new ClassCreator();
 
-        $type = new \indra\object\TypeDefinition();
+        $type = new \indra\definition\TypeDefinition();
         $type->addAttribute('name')->setDataTypeVarchar();
         $classCreator->createClasses(CustomerPicket::class, $type);
 

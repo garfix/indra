@@ -9,9 +9,6 @@ use indra\service\Context;
  */
 abstract class Type
 {
-    /** @const 20 characters */
-    const ATTRIBUTE_ID = 'type----------------';
-
     protected $attributes = [];
 
     /**
