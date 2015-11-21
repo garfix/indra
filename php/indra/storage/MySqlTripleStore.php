@@ -4,6 +4,7 @@ namespace indra\storage;
 
 use indra\exception\ObjectNotFoundException;
 use indra\object\Object;
+use indra\object\Type;
 use indra\service\Context;
 
 /**
@@ -110,6 +111,8 @@ class MySqlTripleStore implements TripleStore
         $attributeValues = $object->getAttributeValues();
         $objectId = $object->getId();
 
+        $attributeValues[Type::ATTRIBUTE_ID] = $type->getId();
+
         foreach ($type->getAttributes() as $attribute) {
 
             if (isset($attributeValues[$attribute->getName()])) {
@@ -119,14 +122,26 @@ class MySqlTripleStore implements TripleStore
                 $dataType = $attribute->getDataType();
                 $tripleId = Context::getIdGenerator()->generateId();
 
-                $db->execute("
-                    INSERT INTO indra_active_" . $dataType . "
-                    SET
-                        `triple_id` = '" . $tripleId . "',
-                        `object_id` = '" . $objectId . "',
-                        `attribute_id` = '" . $attributeId . "',
+                $exists = $db->querySingleCell("
+                    SELECT COUNT(*)
+                    FROM indra_active_" . $dataType . "
+                    WHERE
+                        `object_id` = '" . $objectId . "' AND
+                        `attribute_id` = '" . $attributeId . "' AND
                         `value` = '" . $db->esc($attributeValue) . "'
                 ");
+
+                if (!$exists) {
+
+                    $db->execute("
+                        INSERT INTO indra_active_" . $dataType . "
+                        SET
+                            `triple_id` = '" . $tripleId . "',
+                            `object_id` = '" . $objectId . "',
+                            `attribute_id` = '" . $attributeId . "',
+                            `value` = '" . $db->esc($attributeValue) . "'
+                    ");
+                }
             }
         }
     }

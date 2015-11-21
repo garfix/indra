@@ -3,7 +3,7 @@
 namespace indra\service;
 
 use Exception;
-use indra\object\Type;
+use indra\object\TypeDefinition;
 use ReflectionClass;
 
 /**
@@ -13,10 +13,10 @@ class ClassCreator
 {
     /**
      * @param $locatorClass
-     * @param Type $type
+     * @param TypeDefinition $type
      * @throws Exception
      */
-    public function createClasses($locatorClass, Type $type)
+    public function createClasses($locatorClass, TypeDefinition $type)
     {
         $reflector = new ReflectionClass($locatorClass);
         $locatorClassPath = dirname($reflector->getFileName());

@@ -5,19 +5,13 @@ namespace indra\object;
 use indra\service\Context;
 
 /**
+ * A tool for creating types in the setup tier.
+ *
  * @author Patrick van Bergen
  */
-abstract class Type
+class TypeDefinition
 {
-    /** @const 20 characters */
-    const ATTRIBUTE_ID = 'type----------------';
-
     protected $attributes = [];
-
-    /**
-     * @return string Indra id.
-     */
-    public abstract function getId();
 
     public function addAttribute($name)
     {
@@ -35,13 +29,5 @@ abstract class Type
     public function getAttributes()
     {
         return $this->attributes;
-    }
-
-    /**
-     * @return Attribute
-     */
-    public function getAttributeById($id)
-    {
-        return $this->attributes[$id];
     }
 }

@@ -40,7 +40,7 @@ class DB
 
     /**
      * @param string $query
-     * @return Generator
+     * @return Generator An iteratable array.
      * @throws DataBaseException
      */
     public function queryMultipleRows($query)
@@ -52,6 +52,26 @@ class DB
         if ($resultSet) {
             while ($result = $resultSet->fetch_assoc()) {
                 yield $result;
+            }
+        } else {
+            throw new DataBaseException("MySQL error: " . mysqli_error($mysqli));
+        }
+    }
+
+    /**
+     * @param string $query
+     * @return mixed A single value
+     * @throws DataBaseException
+     */
+    public function querySingleCell($query)
+    {
+        $mysqli = Context::getMySqli();
+
+        $resultSet = $mysqli->query($query);
+
+        if ($resultSet) {
+            while ($result = $resultSet->fetch_assoc()) {
+                return reset($result);
             }
         } else {
             throw new DataBaseException("MySQL error: " . mysqli_error($mysqli));

@@ -13,6 +13,14 @@
 - het is een idee dat de gebruiker helemaal niet queriet uit de triple tabellen. alleen de views zijn toegestaan.
 - foutmeldingen: overal exceptions
 - een object krijgt bij creatie al een id
+- alle typen van een object worden opgeslagen in de database, maar als een object wordt geinitialiseerd is dat altijd vanuit 1 type. Het object heeft dan geen weet van zijn andere typen;
+    je instantieert dus een 'interpretatie', een 'view' van het object
+
+# Tiers
+
+- storage: triple store (storage)
+- type creation and management (setup and upgrade)
+- php classes (applicatie)
 
 # Views
 

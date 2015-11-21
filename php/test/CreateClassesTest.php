@@ -1,7 +1,6 @@
 <?php
 
 use indra\service\ClassCreator;
-use indra\object\Type;
 use my_module\customer\CustomerPicket;
 use my_module\customer\CustomerType;
 use my_module\customer\Customer;
@@ -17,7 +16,7 @@ class CreateTypeTest extends TestBase
     {
         $classCreator = new ClassCreator();
 
-        $type = new Type();
+        $type = new \indra\object\TypeDefinition();
         $type->addAttribute('name')->setDataTypeVarchar();
         $classCreator->createClasses(CustomerPicket::class, $type);
 

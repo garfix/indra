@@ -14,4 +14,12 @@ class {{ className }} extends Type
     {
 {{ typeAttributes }}
     }
+
+    /**
+     * @return string Indra id.
+     */
+    public function getId()
+    {
+        return '{{ classId }}';
+    }
 }

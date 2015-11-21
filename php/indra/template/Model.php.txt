@@ -14,7 +14,8 @@ class {{ className }}
      */
     public function create()
     {
-        $object = new {{ typeName }}($this->getType());
+        $type = $this->getType();
+        $object = new {{ typeName }}($type);
         $object->setId(Context::getIdGenerator()->generateId());
         return $object;
     }
