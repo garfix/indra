@@ -37,6 +37,9 @@ class TestBase extends PHPUnit_Framework_TestCase
             @unlink(__DIR__ . '/my_module/customer/Customer.php');
             @unlink(__DIR__ . '/my_module/customer/CustomerModel.php');
             @unlink(__DIR__ . '/my_module/customer/CustomerType.php');
+            @unlink(__DIR__ . '/my_module/supplier/Supplier.php');
+            @unlink(__DIR__ . '/my_module/supplier/SupplierModel.php');
+            @unlink(__DIR__ . '/my_module/supplier/SupplierType.php');
         }
 
         $mysqli = Context::getMySqli();

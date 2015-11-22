@@ -3,6 +3,7 @@
 namespace {{ namespace }};
 
 use indra\service\Context;
+use indra\object\Object;
 
 /**
  * This class was auto-generated. Do not change it, for it will be overwritten.
@@ -12,7 +13,7 @@ class {{ className }}
     /**
      * @return {{ typeName }}
      */
-    public function create()
+    public function create{{ typeName }}()
     {
         $type = $this->getType();
         $object = new {{ typeName }}($type);
@@ -20,19 +21,28 @@ class {{ className }}
         return $object;
     }
 
-    public function save({{ typeName }} $object)
+    public function create{{ typeName }}From(Object $existingObject)
+    {
+        $type = $this->getType();
+        $object = new {{ typeName }}($type);
+        $object->setId($existingObject->getId());
+        $object->setAttributeValues($existingObject->getAttributeValues());
+        return $object;
+    }
+
+    public function save{{ typeName }}({{ typeName }} $object)
     {
         Context::getTripleStore()->save($object);
     }
 
-    public function load($indraId)
+    public function load{{ typeName }}($indraId)
     {
         $object = new {{ typeName }}($this->getType());
         Context::getTripleStore()->load($object, $indraId);
         return $object;
     }
 
-    public function remove({{ typeName }} $object)
+    public function remove{{ typeName }}({{ typeName }} $object)
     {
         Context::getTripleStore()->remove($object);
     }

@@ -27,14 +27,14 @@ class CreateObjectTest extends TestBase
     {
         $model = new CustomerModel();
 
-        $customer = $model->create();
+        $customer = $model->createCustomer();
         $this->assertNotEmpty($customer->getId());
 
         $customer->setName('Dr. Jones');
-        $model->save($customer);
+        $model->saveCustomer($customer);
         $id = $customer->getId();
 
-        $customer2 = $model->load($id);
+        $customer2 = $model->loadCustomer($id);
         $name = $customer2->getName();
         $this->assertEquals('Dr. Jones', $name);
     }
@@ -43,16 +43,16 @@ class CreateObjectTest extends TestBase
     {
         $model = new CustomerModel();
 
-        $customer = $model->create();
+        $customer = $model->createCustomer();
         $customer->setName('Dr. Jones');
-        $model->save($customer);
+        $model->saveCustomer($customer);
         $id = $customer->getId();
 
-        $customer2 = $model->load($id);
+        $customer2 = $model->loadCustomer($id);
         $customer2->setName('Dr. Livingstone');
-        $model->save($customer2);
+        $model->saveCustomer($customer2);
 
-        $customer3 = $model->load($id);
+        $customer3 = $model->loadCustomer($id);
         $name = $customer3->getName();
         $this->assertEquals('Dr. Livingstone', $name);
     }
@@ -61,17 +61,17 @@ class CreateObjectTest extends TestBase
     {
         $model = new CustomerModel();
 
-        $customer = $model->create();
+        $customer = $model->createCustomer();
         $customer->setName('Dr. Jones');
-        $model->save($customer);
+        $model->saveCustomer($customer);
         $id = $customer->getId();
 
-        $model->remove($customer);
+        $model->removeCustomer($customer);
 
         $exception = false;
 
         try {
-            $model->load($id);
+            $model->loadCustomer($id);
         } catch (Exception $e) {
             $exception = true;
         }

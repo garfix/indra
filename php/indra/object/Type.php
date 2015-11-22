@@ -2,8 +2,6 @@
 
 namespace indra\object;
 
-use indra\service\Context;
-
 /**
  * @author Patrick van Bergen
  */
@@ -16,16 +14,6 @@ abstract class Type
      */
     public abstract function getId();
 
-    public function addAttribute($name)
-    {
-        $attribute = new Attribute(Context::getIdGenerator()->generateId());
-        $attribute->setName($name);
-
-        $this->attributes[$name] = $attribute;
-
-        return $attribute;
-    }
-
     /**
      * @return Attribute[]
      */
@@ -35,10 +23,10 @@ abstract class Type
     }
 
     /**
-     * @return Attribute
+     * @return Attribute|false
      */
     public function getAttributeById($id)
     {
-        return $this->attributes[$id];
+        return isset($this->attributes[$id]) ? $this->attributes[$id] : false;
     }
 }

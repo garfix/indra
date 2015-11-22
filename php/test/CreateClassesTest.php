@@ -1,5 +1,6 @@
 <?php
 
+use indra\definition\TypeDefinition;
 use indra\service\ClassCreator;
 use my_module\customer\CustomerPicket;
 use my_module\customer\CustomerType;
@@ -16,9 +17,9 @@ class CreateTypeTest extends TestBase
     {
         $classCreator = new ClassCreator();
 
-        $type = new \indra\definition\TypeDefinition();
-        $type->addAttribute('name')->setDataTypeVarchar();
-        $classCreator->createClasses(CustomerPicket::class, $type);
+        $typeDefinition = new TypeDefinition();
+        $typeDefinition->addAttribute('name')->setDataTypeVarchar();
+        $classCreator->createClasses(CustomerPicket::class, $typeDefinition);
 
         // test if customer class has been created
         // NB: it is correct that this class does not exist at compile time. That's exactly the point :)

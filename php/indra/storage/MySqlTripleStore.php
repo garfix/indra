@@ -157,9 +157,13 @@ class MySqlTripleStore implements TripleStore
 
                 } else {
 
-                    $attributeName = $type->getAttributeById($result['attribute_id'])->getName();
-                    $attributeValues[$attributeName] = $result['value'];
+                    $attribute = $type->getAttributeById($result['attribute_id']);
 
+                    if ($attribute !== false) {
+#todo: this is dangerous; it is needed only when an object has multiple parents; check this better?
+                        $attributeName = $attribute->getName();
+                        $attributeValues[$attributeName] = $result['value'];
+                    }
                 }
             }
         }
