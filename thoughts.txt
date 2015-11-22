@@ -16,6 +16,9 @@
 - alle typen van een object worden opgeslagen in de database, maar als een object wordt geinitialiseerd is dat altijd vanuit 1 type. Het object heeft dan geen weet van zijn andere typen;
     je instantieert dus een 'interpretatie', een 'view' van het object
 - attribute en attribute definition is nu nog hetzelfde ding
+- verschillende typen kunnen attributen delen. Ik wil dat volledige ongerelateerde typen (niet verbonden door een gemeenschappelijke ouder) toch dezelfde attribuut kunnen hebben
+    (niet alleen de naam, echt dezelfde) Voorbeeld-attribuut: date modified
+- object-level locking
 
 # Tiers
 

@@ -119,6 +119,18 @@ class MySqlTripleStore implements TripleStore
         // type
         $this->writeTriple($objectId, self::ATTRIBUTE_TYPE_ID, $type->getId(), Attribute::TYPE_VARCHAR);
 
+        // existing attribute values
+        list($existingValues, $typeFound) = $this->getAttributeValues($object);
+
+//        // changed values
+//        $changedValues = [];
+//        foreach ($existingValues as $existingId => $existingValue) {
+//            if ($existingValue != $attributeValues[$existingName]) {
+//                $changedValues[$existingName] = $existingValue;
+//                $this->deactivateTriple($objectId, $attribute->getId(), $existingValue, $attribute->getDataType());
+//            }
+//        }
+
         // attributes
         foreach ($type->getAttributes() as $attribute) {
             if (isset($attributeValues[$attribute->getName()])) {
@@ -129,11 +141,27 @@ class MySqlTripleStore implements TripleStore
 
     public function load(Object $object, $objectId)
     {
-        $db = Context::getDB();
-        $type = $object->getType();
-
         $object->setId($objectId);
 
+        list($attributeValues, $typeFound) = $this->getAttributeValues($object);
+
+        if (!$typeFound) {
+            throw new ObjectCreationError('No object of this type and id found.');
+        }
+
+        if (empty($attributeValues)) {
+            throw new ObjectNotFoundException();
+        }
+
+        $object->setAttributeValues($attributeValues);
+    }
+
+    private function getAttributeValues(Object $object)
+    {
+        $db = Context::getDB();
+
+        $type = $object->getType();
+        $objectId = $object->getId();
         $attributeValues = [];
         $typeFound = false;
 
@@ -168,15 +196,7 @@ class MySqlTripleStore implements TripleStore
             }
         }
 
-        if (!$typeFound) {
-            throw new ObjectCreationError('No object of this type and id found.');
-        }
-
-        if (empty($attributeValues)) {
-            throw new ObjectNotFoundException();
-        }
-
-        $object->setAttributeValues($attributeValues);
+        return [$attributeValues, $typeFound];
     }
 
     /**
