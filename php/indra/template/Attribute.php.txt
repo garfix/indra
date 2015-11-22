@@ -3,7 +3,7 @@
      */
     public function set{{ attributeName }}($attribute)
     {
-        $this->attributes['{{ attribute }}'] = $attribute;
+        $this->attributes['{{ attributeId }}'] = $attribute;
     }
 
     /**
@@ -11,5 +11,5 @@
      */
     public function get{{ attributeName }}()
     {
-        return isset($this->attributes['{{ attribute }}']) ? $this->attributes['{{ attribute }}'] : null;
+        return isset($this->attributes['{{ attributeId }}']) ? $this->attributes['{{ attributeId }}'] : null;
     }

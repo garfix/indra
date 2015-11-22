@@ -29,7 +29,7 @@ class ClassCreator
         foreach ($typeDefinition->getAttributes() as $attribute) {
 
             $replacements = [
-                '{{ attribute }}' => $attribute->getName(),
+                '{{ attributeId }}' => $attribute->getId(),
                 '{{ attributeName }}' => ucfirst($attribute->getName()),
             ];
 

@@ -133,8 +133,8 @@ class MySqlTripleStore implements TripleStore
 
         // attributes
         foreach ($type->getAttributes() as $attribute) {
-            if (isset($attributeValues[$attribute->getName()])) {
-                $this->writeTriple($objectId, $attribute->getId(), $attributeValues[$attribute->getName()], $attribute->getDataType());
+            if (isset($attributeValues[$attribute->getId()])) {
+                $this->writeTriple($objectId, $attribute->getId(), $attributeValues[$attribute->getId()], $attribute->getDataType());
             }
         }
     }
@@ -185,13 +185,8 @@ class MySqlTripleStore implements TripleStore
 
                 } else {
 
-                    $attribute = $type->getAttributeById($result['attribute_id']);
+                    $attributeValues[$result['attribute_id']] = $result['value'];
 
-                    if ($attribute !== false) {
-#todo: this is dangerous; it is needed only when an object has multiple parents; check this better?
-                        $attributeName = $attribute->getName();
-                        $attributeValues[$attributeName] = $result['value'];
-                    }
                 }
             }
         }
