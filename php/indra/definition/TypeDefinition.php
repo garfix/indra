@@ -3,7 +3,6 @@
 namespace indra\definition;
 
 use indra\object\Attribute;
-use indra\service\Context;
 
 /**
  * A tool for creating types in the setup tier.
@@ -15,15 +14,12 @@ class TypeDefinition
     protected $attributes = [];
 
     /**
-     * @param string $name
+     * @param Attribute $attribute
      * @return Attribute
      */
-    public function addAttribute($name)
+    public function addAttribute(Attribute $attribute)
     {
-        $attribute = new Attribute(Context::getIdGenerator()->generateId());
-        $attribute->setName($name);
-
-        $this->attributes[$name] = $attribute;
+        $this->attributes[$attribute->getName()] = $attribute;
 
         return $attribute;
     }

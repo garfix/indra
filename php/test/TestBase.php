@@ -8,7 +8,7 @@ use indra\service\TableCreator;
  */
 class TestBase extends PHPUnit_Framework_TestCase
 {
-    const REMOVE_GENERATED_CLASSES = false;
+    const REMOVE_GENERATED_CLASSES = true;
 
     public static function setUpBeforeClass()
     {

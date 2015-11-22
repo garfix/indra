@@ -1,6 +1,8 @@
 <?php
 
+use indra\definition\AttributeDefinition;
 use indra\definition\TypeDefinition;
+use indra\object\Attribute;
 use indra\service\ClassCreator;
 use my_module\customer\CustomerModel;
 use my_module\customer\CustomerPicket;
@@ -20,17 +22,15 @@ class MultipleInheritanceTest extends TestBase
 
         $classCreator = new ClassCreator();
 
-//        $name = AttributeDefinition::create('name')
-//            ->setDataTypeVarchar();
+        $name = AttributeDefinition::create('name')
+            ->setDataTypeVarchar();
 
         $type = new TypeDefinition();
-        $type->addAttribute('name')->setDataTypeVarchar();
-#        $type->addAttribute($name);
+        $type->addAttribute($name);
         $classCreator->createClasses(CustomerPicket::class, $type);
 
         $type = new TypeDefinition();
-        $type->addAttribute('name')->setDataTypeVarchar();
-#        $type->addAttribute($name);
+        $type->addAttribute($name);
         $classCreator->createClasses(SupplierPicket::class, $type);
     }
 
@@ -48,14 +48,12 @@ class MultipleInheritanceTest extends TestBase
         $supplier1->setName('Mr. Musthave');
         $supplierModel->saveSupplier($supplier1);
 
-        // test that customer1 is now both customer and supplier
+        // test that customer1 is now both customer and supplier, and these share the same name
 
         $customer2 = $customerModel->loadCustomer($objectId);
         $this->assertEquals('Ms. Buyalot', $customer2->getName());
 
         $supplier2 = $supplierModel->loadSupplier($objectId);
         $this->assertEquals('Mr. Musthave', $supplier2->getName());
-
-#todo note that this person now has two names, that is incorrect
     }
 }
