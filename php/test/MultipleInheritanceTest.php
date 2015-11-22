@@ -51,9 +51,9 @@ class MultipleInheritanceTest extends TestBase
         // test that customer1 is now both customer and supplier, and these share the same name
 
         $customer2 = $customerModel->loadCustomer($objectId);
-        $this->assertEquals('Ms. Buyalot', $customer2->getName());
+        $this->assertEquals('Mr. Musthave', $customer2->getName());
 
         $supplier2 = $supplierModel->loadSupplier($objectId);
-//        $this->assertEquals('Mr. Musthave', $supplier2->getName());
+        $this->assertEquals('Mr. Musthave', $supplier2->getName());
     }
 }

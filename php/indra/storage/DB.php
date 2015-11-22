@@ -60,6 +60,28 @@ class DB
 
     /**
      * @param string $query
+     * @return array|null A single row, or null for no results
+     * @throws DataBaseException
+     */
+    public function querySingleRow($query)
+    {
+        $mysqli = Context::getMySqli();
+
+        $resultSet = $mysqli->query($query);
+
+        if ($resultSet) {
+            if ($result = $resultSet->fetch_assoc()) {
+                return $result;
+            } else {
+                return null;
+            }
+        } else {
+            throw new DataBaseException("MySQL error: " . mysqli_error($mysqli));
+        }
+    }
+
+    /**
+     * @param string $query
      * @return mixed A single value
      * @throws DataBaseException
      */

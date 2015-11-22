@@ -61,7 +61,7 @@ class MySqlTripleStore implements TripleStore
     /**
      * @return string[]
      */
-    public function getAllDataTypes()
+    private function getAllDataTypes()
     {
         return array_keys($this->getTypeInformation());
     }
@@ -110,31 +110,29 @@ class MySqlTripleStore implements TripleStore
 
     public function save(Object $object)
     {
-        $db = Context::getDB();
-
         $type = $object->getType();
         $attributeValues = $object->getAttributeValues();
         $objectId = $object->getId();
 
         // type
-        $this->writeTriple($objectId, self::ATTRIBUTE_TYPE_ID, $type->getId(), Attribute::TYPE_VARCHAR);
-
-        // existing attribute values
-        list($existingValues, $typeFound) = $this->getAttributeValues($object);
-
-//        // changed values
-//        $changedValues = [];
-//        foreach ($existingValues as $existingId => $existingValue) {
-//            if ($existingValue != $attributeValues[$existingName]) {
-//                $changedValues[$existingName] = $existingValue;
-//                $this->deactivateTriple($objectId, $attribute->getId(), $existingValue, $attribute->getDataType());
-//            }
-//        }
+        $this->writeTriple($objectId, self::ATTRIBUTE_TYPE_ID, $type->getId(), Attribute::TYPE_VARCHAR, true);
 
         // attributes
         foreach ($type->getAttributes() as $attribute) {
-            if (isset($attributeValues[$attribute->getId()])) {
-                $this->writeTriple($objectId, $attribute->getId(), $attributeValues[$attribute->getId()], $attribute->getDataType());
+
+            $attributeId = $attribute->getId();
+
+            if (isset($attributeValues[$attributeId])) {
+
+                // check if the value has changed
+                $tripleData = $this->getTripleData($objectId, $attributeId, $attribute->getDataType());
+
+                // if so, the old value must be deactivated
+                if ($tripleData['value'] !== $attributeValues[$attributeId]) {
+                    $this->deactivateTriple($tripleData['triple_id'], $objectId, $attributeId, $tripleData['value'], $attribute->getDataType());
+                }
+
+                $this->writeTriple($objectId, $attributeId, $attributeValues[$attributeId], $attribute->getDataType(), true);
             }
         }
     }
@@ -154,6 +152,43 @@ class MySqlTripleStore implements TripleStore
         }
 
         $object->setAttributeValues($attributeValues);
+    }
+
+    public function remove(Object $object)
+    {
+        $db = Context::getDB();
+
+        $objectId = $object->getId();
+
+        foreach ($this->getAllDataTypes() as $dataType) {
+
+            $results = $db->queryMultipleRows("
+                SELECT `triple_id`, `object_id`, `attribute_id`, `value` FROM indra_active_" . $dataType . "
+                WHERE
+                    `object_id` = '" . $objectId . "'
+            ");
+
+            foreach ($results as $result) {
+
+                $tripleId = $result['triple_id'];
+                $objectId = $result['object_id'];
+                $attributeId = $result['attribute_id'];
+                $attributeValue = $result['value'];
+
+                $this->deactivateTriple($tripleId, $objectId, $attributeId, $attributeValue, $dataType);
+            }
+        }
+    }
+
+    private function getTripleData($objectId, $attributeId, $dataType)
+    {
+        return Context::getDB()->querySingleRow("
+            SELECT `triple_id`, `value`
+            FROM indra_active_" . $dataType . "
+            WHERE
+                `object_id` = '" . $objectId . "' AND
+                `attribute_id` = '" . $attributeId . "'
+        ");
     }
 
     private function getAttributeValues(Object $object)
@@ -213,62 +248,24 @@ class MySqlTripleStore implements TripleStore
         return $dataTypes;
     }
 
-    public function remove(Object $object)
-    {
-        $db = Context::getDB();
-
-        $objectId = $object->getId();
-
-        foreach ($this->getAllDataTypes() as $dataType) {
-
-            $results = $db->queryMultipleRows("
-                SELECT `triple_id`, `object_id`, `attribute_id`, `value` FROM indra_active_" . $dataType . "
-                WHERE
-                    `object_id` = '" . $objectId . "'
-            ");
-
-            foreach ($results as $result) {
-
-                $tripleId = $result['triple_id'];
-                $objectId = $result['object_id'];
-                $attributeId = $result['attribute_id'];
-                $attributeValue = $result['value'];
-
-                $db->execute("
-                    INSERT INTO indra_inactive_" . $dataType . "
-                    SET
-                        `triple_id` = '" . $tripleId . "',
-                        `object_id` = '" . $objectId . "',
-                        `attribute_id` = '" . $attributeId . "',
-                        `value` = '" . $db->esc($attributeValue) . "'
-                ");
-
-                $db->execute("
-                    DELETE FROM indra_active_" . $dataType . "
-                    WHERE
-                        `triple_id` = '" . $tripleId . "'
-                ");
-
-            }
-        }
-    }
-
     /**
      * @param $objectId
      * @param $attributeId
      * @param $attributeValue
      * @param $dataType
+     * @param bool $active
      * @throws \indra\exception\DataBaseException
      */
-    public function writeTriple($objectId, $attributeId, $attributeValue, $dataType)
+    private function writeTriple($objectId, $attributeId, $attributeValue, $dataType, $active)
     {
         $db = Context::getDB();
 
         $tripleId = Context::getIdGenerator()->generateId();
+        $activeness = $active ? 'active' : 'inactive';
 
         $exists = $db->querySingleCell("
                     SELECT COUNT(*)
-                    FROM indra_active_" . $dataType . "
+                    FROM indra_" . $activeness . "_" . $dataType . "
                     WHERE
                         `object_id` = '" . $objectId . "' AND
                         `attribute_id` = '" . $attributeId . "' AND
@@ -278,7 +275,7 @@ class MySqlTripleStore implements TripleStore
         if (!$exists) {
 
             $db->execute("
-                        INSERT INTO indra_active_" . $dataType . "
+                        INSERT INTO indra_" . $activeness . "_" . $dataType . "
                         SET
                             `triple_id` = '" . $tripleId . "',
                             `object_id` = '" . $objectId . "',
@@ -286,5 +283,26 @@ class MySqlTripleStore implements TripleStore
                             `value` = '" . $db->esc($attributeValue) . "'
                     ");
         }
+    }
+
+    public function deactivateTriple($tripleId, $objectId, $attributeId, $attributeValue, $dataType)
+    {
+        $db = Context::getDB();
+
+        $db->execute("
+                    INSERT INTO indra_inactive_" . $dataType . "
+                    SET
+                        `triple_id` = '" . $tripleId . "',
+                        `object_id` = '" . $objectId . "',
+                        `attribute_id` = '" . $attributeId . "',
+                        `value` = '" . $db->esc($attributeValue) . "'
+                ");
+
+        $db->execute("
+                    DELETE FROM indra_active_" . $dataType . "
+                    WHERE
+                        `triple_id` = '" . $tripleId . "'
+                ");
+
     }
 }
