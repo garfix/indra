@@ -19,6 +19,57 @@
 - verschillende typen kunnen attributen delen. Ik wil dat volledige ongerelateerde typen (niet verbonden door een gemeenschappelijke ouder) toch dezelfde attribuut kunnen hebben
     (niet alleen de naam, echt dezelfde) Voorbeeld-attribuut: date modified
 - object-level locking
+- ook te implementeren als gedistribueerde database? evt
+- prevent double triples by locking; ook geen arrays?
+- nieuw datatype: reference (uuid)?
+
+# Revisiebeheer
+
+- elke revisie is een patch, een diff van triples
+- elke revisie is ook een set van gewijzigde objecten
+- in een revisie kan een object ook voorkomen als de waarde van een referentie attribuut
+- je kunt per object zijn laatste revisie bijhouden, gelinkte lijst
+
+Er geldt:
+
+- een revisie mag pas worden ongedaan gemaakt als de objecten die erin voorkomen als onderwerp of referentie, niet later nog terugkomen in een andere revisie
+- revision id, index (volgnr triples), triple, action
+- revisies zijn geordend; tijdstip alleen is niet voldoende
+
+New revision:
+
+- time
+- object-ids
+- triple-ids
+
+indra_revision_object
+- object
+- revision-id
+- previous-revision-id
+
+wat gebeurt er als je een revisie ongedaan maakt?
+
+Een object opslaan kan via de model. Objecten van meerdere typen ineens opslaan kan met:
+Context::getRevisionStore()->saveMultiple([$customer, $description);
+
+Als je meerdere revisies in 1 request toelaat, kun je dan geen circulaire dependencies maken?
+
+- r1: A.ref = C
+- r2: C.ref = A
+- save r1
+- save r2
+- draai r2 terug => r1 is stuk? nee
+
+- r1: A.attr = x
+- r2: delete A
+- r3: A.attr = y
+- save r1
+- save r2
+- draai r2 terug => r1 is stuk? ja
+
+Dat is stuk, maar ook niet waarschijnlijk in een request. En daarnaast kan de triple store hier op controleren; net voor het opslaan.
+
+Nee dat is niet stuk. De triple store haalt net voor het opslaan het oude object op. Bij het opslaan worden alle attributen (mogelijk opnieuw) geschreven.
 
 # Tiers
 

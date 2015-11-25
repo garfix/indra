@@ -3,6 +3,7 @@
 namespace indra\storage;
 
 use Exception;
+use indra\exception\DataBaseException;
 use indra\object\Object;
 
 /**
@@ -12,10 +13,22 @@ interface TripleStore
 {
     /**
      * @return void
+     * @throws DataBaseException
      */
     public function createBasicTables();
 
-    public function load(Object $object, $indraId);
+    /**
+     * @param Revision $revision
+     * @throws DataBaseException
+     */
+    public function storeRevision(Revision $revision);
+
+    /**
+     * @param Object $object
+     * @param $objectId
+     * @return mixed
+     */
+    public function load(Object $object, $objectId);
 
     /**
      * @param Object $object

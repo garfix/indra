@@ -2,6 +2,7 @@
 
 namespace indra\storage;
 
+use indra\exception\DataBaseException;
 use indra\exception\ObjectCreationError;
 use indra\exception\ObjectNotFoundException;
 use indra\object\Attribute;
@@ -106,16 +107,43 @@ class MySqlTripleStore implements TripleStore
 					PRIMARY KEY  (`revision_id`, `triple_id`)
             ) engine InnoDB
         ");
+//
+//        $db->execute("
+//            CREATE TABLE IF NOT EXISTS indra_revision_object (
+//					`revision_id`				char(20) not null,
+//					`object_id`					char(20) not null
+//					PRIMARY KEY  (`revision_id`, `object_id`)
+//            ) engine InnoDB
+//        ");
     }
 
-    public function save(Object $object)
+    /**
+     * @param Revision $revision
+     * @throws DataBaseException
+     */
+    public function storeRevision(Revision $revision)
+    {
+        $db = Context::getDB();
+        $dateTime = Context::getDateTimeGenerator()->getDateTime();
+
+        $db->execute("
+            INSERT INTO `indra_revision`
+              SET
+                  `revision_id` = '" . $revision->getId() . "',
+                  `revision_description` = '" . $db->esc($revision->getDescription()) . "',
+                  `revision_datetime` = '" . $dateTime->format('Y-m-d H:i:s') . "'
+        ");
+    }
+
+    public function save(Object $object, $revisionId = null)
     {
         $type = $object->getType();
         $attributeValues = $object->getAttributeValues();
         $objectId = $object->getId();
 
         // type
-        $this->writeTriple($objectId, self::ATTRIBUTE_TYPE_ID, $type->getId(), Attribute::TYPE_VARCHAR, true);
+        $tripleId = $this->writeTriple($objectId, self::ATTRIBUTE_TYPE_ID, $type->getId(), Attribute::TYPE_VARCHAR, true);
+        $this->writeRevisionAction($revisionId, RevisionAction::ACTION_ACTIVATE, $tripleId);
 
         // attributes
         foreach ($type->getAttributes() as $attribute) {
@@ -130,11 +158,20 @@ class MySqlTripleStore implements TripleStore
                 // if so, the old value must be deactivated
                 if ($tripleData['value'] !== $attributeValues[$attributeId]) {
                     $this->deactivateTriple($tripleData['triple_id'], $objectId, $attributeId, $tripleData['value'], $attribute->getDataType());
+
+                    if ($revisionId !== null) {
+                        $this->writeRevisionAction($revisionId, RevisionAction::ACTION_DEACTIVATE, $tripleData['triple_id']);
+                    }
                 }
 
-                $this->writeTriple($objectId, $attributeId, $attributeValues[$attributeId], $attribute->getDataType(), true);
+                $tripleId = $this->writeTriple($objectId, $attributeId, $attributeValues[$attributeId], $attribute->getDataType(), true);
+                $this->writeRevisionAction($revisionId, RevisionAction::ACTION_ACTIVATE, $tripleId);
             }
         }
+
+//        if ($revisionId) {
+//            $this->writeRevisionObject($revisionId, $objectId);
+//        }
     }
 
     public function load(Object $object, $objectId)
@@ -180,6 +217,31 @@ class MySqlTripleStore implements TripleStore
         }
     }
 
+//    private function writeRevisionObject($revisionId, $objectId)
+//    {
+//        $db = Context::getDB();
+//
+//        $db->execute("
+//            INSERT INTO `indra_revision_object`
+//              SET
+//                  `revision_id` = '" . $revisionId . "',
+//                  `object_id` = '" . $objectId . "'
+//        ");
+//    }
+
+    private function writeRevisionAction($revisionId, $action, $tripleId)
+    {
+        $db = Context::getDB();
+
+        $db->execute("
+            INSERT INTO `indra_revision_action`
+              SET
+                  `revision_id` = '" . $revisionId . "',
+                  `triple_id` = '" . $tripleId . "',
+                  `action` = '" . $action . "'
+        ");
+    }
+
     private function getTripleData($objectId, $attributeId, $dataType)
     {
         return Context::getDB()->querySingleRow("
@@ -189,6 +251,43 @@ class MySqlTripleStore implements TripleStore
                 `object_id` = '" . $objectId . "' AND
                 `attribute_id` = '" . $attributeId . "'
         ");
+    }
+
+    public function getRevisionObjects(Revision $revision)
+    {
+        $db = Context::getDB();
+
+        $q = "
+            SELECT `object_id`
+            FROM `indra_revision_object`
+            WHERE `revision_id` = '" . $db->esc($revision->getId())  . "'
+        ";
+
+        return $db->querySingleColumn($q);
+    }
+
+    /**
+     * @param Revision $revision
+     * @return RevisionAction[]
+     * @throws DataBaseException
+     */
+    public function getRevisionActions(Revision $revision)
+    {
+        $db = Context::getDB();
+
+        $q = "
+            SELECT `triple_id`, `action`
+            FROM `indra_revision_action`
+            WHERE `revision_id` = '" . $db->esc($revision->getId())  . "'
+        ";
+
+        $actions = [];
+
+        foreach ($db->queryMultipleRows($q) as $row) {
+            $actions[] = new RevisionAction($row['triple_id'], $row['action']);
+        }
+
+        return $actions;
     }
 
     private function getAttributeValues(Object $object)
@@ -254,7 +353,8 @@ class MySqlTripleStore implements TripleStore
      * @param $attributeValue
      * @param $dataType
      * @param bool $active
-     * @throws \indra\exception\DataBaseException
+     * @return string Triple id
+     * @throws DataBaseException
      */
     private function writeTriple($objectId, $attributeId, $attributeValue, $dataType, $active)
     {
@@ -283,6 +383,8 @@ class MySqlTripleStore implements TripleStore
                             `value` = '" . $db->esc($attributeValue) . "'
                     ");
         }
+
+        return $tripleId;
     }
 
     public function deactivateTriple($tripleId, $objectId, $attributeId, $attributeValue, $dataType)
@@ -304,5 +406,57 @@ class MySqlTripleStore implements TripleStore
                         `triple_id` = '" . $tripleId . "'
                 ");
 
+    }
+
+    public function deactivateTriples($tripleIds)
+    {
+        $db = Context::getDB();
+
+        if (empty($tripleIds)) {
+            return;
+        }
+
+        foreach ($this->getAllDataTypes() as $dataType) {
+
+            $db->execute("
+                INSERT INTO `indra_inactive_" . $dataType . "` (`triple_id`, `object_id`, `attribute_id`, `value`)
+                SELECT `triple_id`, `object_id`, `attribute_id`, `value`
+                FROM `indra_active_" . $dataType . "`
+                WHERE
+                    `triple_id` IN ('" . implode("', '", $tripleIds) . "')
+            ");
+
+            $db->execute("
+                DELETE FROM indra_active_" . $dataType . "
+                WHERE
+                    `triple_id` IN ('" . implode("', '", $tripleIds) . "')
+            ");
+        }
+    }
+
+    public function activateTriples($tripleIds)
+    {
+        $db = Context::getDB();
+
+        if (empty($tripleIds)) {
+            return;
+        }
+
+        foreach ($this->getAllDataTypes() as $dataType) {
+
+            $db->execute("
+                INSERT INTO `indra_active_" . $dataType . "` (`triple_id`, `object_id`, `attribute_id`, `value`)
+                SELECT `triple_id`, `object_id`, `attribute_id`, `value`
+                FROM `indra_inactive_" . $dataType . "`
+                WHERE
+                    `triple_id` IN ('" . implode("', '", $tripleIds) . "')
+            ");
+
+            $db->execute("
+                DELETE FROM indra_inactive_" . $dataType . "
+                WHERE
+                    `triple_id` IN ('" . implode("', '", $tripleIds) . "')
+            ");
+        }
     }
 }

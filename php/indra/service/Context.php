@@ -4,6 +4,7 @@ namespace indra\service;
 
 use Exception;
 use indra\exception\DataBaseException;
+use indra\storage\DateTimeGenerator;
 use indra\storage\DB;
 use indra\storage\IdGenerator;
 use indra\storage\MySqlTripleStore;
@@ -35,6 +36,9 @@ class Context
     /** @var  IdGenerator */
     private static $idGenerator;
 
+    /** @var  DateTimeGenerator */
+    private static $dateTimeGenerator;
+
     /**
      * Removes all services. After this, if a new service is requested, it will be created anew.
      */
@@ -59,6 +63,22 @@ class Context
     public static function getIdGenerator()
     {
         return self::$idGenerator ?: self::$idGenerator = new RandomIdGenerator();
+    }
+
+    /**
+     * @param DateTimeGenerator $dateTimeGenerator
+     */
+    public static function setDateTimeGenerator(DateTimeGenerator $dateTimeGenerator)
+    {
+        self::$dateTimeGenerator = $dateTimeGenerator;
+    }
+    
+    /**
+     * @return DateTimeGenerator
+     */
+    public static function getDateTimeGenerator()
+    {
+        return self::$dateTimeGenerator ?: self::$dateTimeGenerator = new DateTimeGenerator();
     }
 
     /**
