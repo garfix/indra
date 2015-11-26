@@ -12,7 +12,7 @@ class RandomIdGenerator implements IdGenerator
         $id = '';
         $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
-        for ($i = 0; $i < 20; $i++) {
+        for ($i = 0; $i < 22; $i++) {
             $id .= $chars[mt_rand(0, 61)];
         }
 

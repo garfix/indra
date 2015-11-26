@@ -15,8 +15,8 @@ use indra\service\Context;
  */
 class MySqlTripleStore implements TripleStore
 {
-    /** @const 20 characters */
-    const ATTRIBUTE_TYPE_ID = 'type----------------';
+    /** @const 22 characters */
+    const ATTRIBUTE_TYPE_ID = 'type------------------';
 
     private function getTypeInformation()
     {
@@ -76,9 +76,9 @@ class MySqlTripleStore implements TripleStore
 
                 $db->execute("
                     CREATE TABLE IF NOT EXISTS indra_{$state}_{$name} (
-                        `triple_id` char(20) not null,
-                        `object_id` char(20) not null,
-                        `attribute_id` char(20) not null,
+                        `triple_id` binary(22) not null,
+                        `object_id` binary(22) not null,
+                        `attribute_id` binary(22) not null,
                         `value` {$info['type']} not null,
                         primary key object (`object_id`, `attribute_id`, {$info['key']}),
                         unique key attribute (`attribute_id`, {$info['key']}),
@@ -90,7 +90,7 @@ class MySqlTripleStore implements TripleStore
 
         $db->execute("
             CREATE TABLE IF NOT EXISTS indra_revision (
-					`revision_id`				char(20) not null,
+					`revision_id`				binary(22) not null,
 					`revision_datetime` 		datetime not null,
 					`revision_description` 		varchar(255),
 					`username`				    varchar(255),
@@ -101,8 +101,8 @@ class MySqlTripleStore implements TripleStore
 
         $db->execute("
             CREATE TABLE IF NOT EXISTS indra_revision_action (
-					`revision_id`				char(20) not null,
-					`triple_id`					char(20) not null,
+					`revision_id`				binary(22) not null,
+					`triple_id`					binary(22) not null,
 					`action`					char not null,
 					PRIMARY KEY  (`revision_id`, `triple_id`)
             ) engine InnoDB
@@ -110,8 +110,8 @@ class MySqlTripleStore implements TripleStore
 //
 //        $db->execute("
 //            CREATE TABLE IF NOT EXISTS indra_revision_object (
-//					`revision_id`				char(20) not null,
-//					`object_id`					char(20) not null
+//					`revision_id`				binary(22) not null,
+//					`object_id`					binary(22) not null
 //					PRIMARY KEY  (`revision_id`, `object_id`)
 //            ) engine InnoDB
 //        ");

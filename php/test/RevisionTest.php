@@ -54,4 +54,8 @@ class RevisionTest extends TestBase
         $name = $customer2->getName();
         $this->assertEquals('Dr. Jones', $name);
     }
+
+#todo: undo must be a new revision?
+#todo: saveCustomer niet toegestaan in revision model wereld
+#todo: geen char(20) voor indra id's in de create table, maar 'binary' of zo
 }

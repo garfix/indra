@@ -8,7 +8,7 @@ namespace indra\storage;
 interface IdGenerator
 {
     /**
-     * @return string A string of 20 random upper and lower case letters, and numbers.
+     * @return string A string of random upper and lower case letters, and numbers.
      */
     public function generateId();
 }
