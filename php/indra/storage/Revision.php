@@ -17,7 +17,7 @@ class Revision
     private $id;
 
     /** @var Object[] */
-    public $saveList;
+    public $saveList = [];
 
     public function __construct($description)
     {

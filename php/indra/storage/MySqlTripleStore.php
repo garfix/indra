@@ -229,7 +229,7 @@ class MySqlTripleStore implements TripleStore
 //        ");
 //    }
 
-    private function writeRevisionAction($revisionId, $action, $tripleId)
+    public function writeRevisionAction($revisionId, $action, $tripleId)
     {
         $db = Context::getDB();
 

@@ -41,18 +41,27 @@ class RevisionModel
     public function revertRevision(Revision $revision)
     {
         $tripleStore = Context::getTripleStore();
+
+        $undoRevision = $this->createRevision(sprintf("Undo revision %s (%s)",
+            $revision->getId(), $revision->getDescription()));
+
+        $this->saveRevision($undoRevision);
+
         $activationTripleIds = [];
         $deactivationTripleIds = [];
-
         foreach ($tripleStore->getRevisionActions($revision) as $revisionAction) {
             if ($revisionAction->getAction() == RevisionAction::ACTION_ACTIVATE) {
                 $deactivationTripleIds[] = $revisionAction->getTripleId();
+                $tripleStore->writeRevisionAction($undoRevision->getId(), RevisionAction::ACTION_DEACTIVATE, $revisionAction->getTripleId());
             } else {
                 $activationTripleIds[] = $revisionAction->getTripleId();
+                $tripleStore->writeRevisionAction($undoRevision->getId(), RevisionAction::ACTION_ACTIVATE, $revisionAction->getTripleId());
             }
         }
 
         $tripleStore->deactivateTriples($deactivationTripleIds);
         $tripleStore->activateTriples($activationTripleIds);
+
+        return $undoRevision;
     }
 }

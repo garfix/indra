@@ -47,15 +47,23 @@ class RevisionTest extends TestBase
         $revisionModel->saveRevision($revision);
 
         // revert change
-        $revisionModel->revertRevision($revision);
+        $undoRevision = $revisionModel->revertRevision($revision);
 
         // test revert
         $customer2 = $customerModel->loadCustomer($id);
         $name = $customer2->getName();
         $this->assertEquals('Dr. Jones', $name);
+
+        // revert the revert
+        $revisionModel->revertRevision($undoRevision);
+
+
+        // test revert revert
+        $customer3 = $customerModel->loadCustomer($id);
+        $name = $customer3->getName();
+        $this->assertEquals('Dr. Who', $name);
     }
 
 #todo: undo must be a new revision?
 #todo: saveCustomer niet toegestaan in revision model wereld
-#todo: geen char(20) voor indra id's in de create table, maar 'binary' of zo
 }
