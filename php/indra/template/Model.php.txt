@@ -38,7 +38,8 @@ class {{ className }}
     public function load{{ typeName }}($indraId)
     {
         $object = new {{ typeName }}($this->getType());
-        Context::getTripleStore()->load($object, $indraId);
+        $object->setId($indraId);
+        Context::getTripleStore()->load($object);
         return $object;
     }
 

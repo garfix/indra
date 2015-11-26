@@ -174,10 +174,8 @@ class MySqlTripleStore implements TripleStore
 //        }
     }
 
-    public function load(Object $object, $objectId)
+    public function load(Object $object)
     {
-        $object->setId($objectId);
-
         list($attributeValues, $typeFound) = $this->getAttributeValues($object);
 
         if (!$typeFound) {
@@ -217,6 +215,39 @@ class MySqlTripleStore implements TripleStore
         }
     }
 
+    public function revertRevision(Revision $revision, Revision $undoRevision)
+    {
+        $this->storeRevision($undoRevision);
+
+        $activationTripleIds = [];
+        $deactivationTripleIds = [];
+        foreach ($this->getRevisionActions($revision) as $revisionAction) {
+            if ($revisionAction->getAction() == RevisionAction::ACTION_ACTIVATE) {
+                $deactivationTripleIds[] = $revisionAction->getTripleId();
+                $this->writeRevisionAction($undoRevision->getId(), RevisionAction::ACTION_DEACTIVATE, $revisionAction->getTripleId());
+            } else {
+                $activationTripleIds[] = $revisionAction->getTripleId();
+                $this->writeRevisionAction($undoRevision->getId(), RevisionAction::ACTION_ACTIVATE, $revisionAction->getTripleId());
+            }
+        }
+
+        $this->deactivateTriples($deactivationTripleIds);
+        $this->activateTriples($activationTripleIds);
+    }
+
+//    public function getRevisionObjectIds(Revision $revision)
+//    {
+//        $db = Context::getDB();
+//
+//        $q = "
+//            SELECT `object_id`
+//            FROM `indra_revision_object`
+//            WHERE `revision_id` = '" . $db->esc($revision->getId())  . "'
+//        ";
+//
+//        return $db->querySingleColumn($q);
+//    }
+
 //    private function writeRevisionObject($revisionId, $objectId)
 //    {
 //        $db = Context::getDB();
@@ -229,7 +260,7 @@ class MySqlTripleStore implements TripleStore
 //        ");
 //    }
 
-    public function writeRevisionAction($revisionId, $action, $tripleId)
+    private function writeRevisionAction($revisionId, $action, $tripleId)
     {
         $db = Context::getDB();
 
@@ -253,25 +284,13 @@ class MySqlTripleStore implements TripleStore
         ");
     }
 
-    public function getRevisionObjects(Revision $revision)
-    {
-        $db = Context::getDB();
-
-        $q = "
-            SELECT `object_id`
-            FROM `indra_revision_object`
-            WHERE `revision_id` = '" . $db->esc($revision->getId())  . "'
-        ";
-
-        return $db->querySingleColumn($q);
-    }
 
     /**
      * @param Revision $revision
      * @return RevisionAction[]
      * @throws DataBaseException
      */
-    public function getRevisionActions(Revision $revision)
+    private function getRevisionActions(Revision $revision)
     {
         $db = Context::getDB();
 
@@ -387,7 +406,7 @@ class MySqlTripleStore implements TripleStore
         return $tripleId;
     }
 
-    public function deactivateTriple($tripleId, $objectId, $attributeId, $attributeValue, $dataType)
+    private function deactivateTriple($tripleId, $objectId, $attributeId, $attributeValue, $dataType)
     {
         $db = Context::getDB();
 
@@ -408,7 +427,7 @@ class MySqlTripleStore implements TripleStore
 
     }
 
-    public function deactivateTriples($tripleIds)
+    private function deactivateTriples($tripleIds)
     {
         $db = Context::getDB();
 
@@ -434,7 +453,7 @@ class MySqlTripleStore implements TripleStore
         }
     }
 
-    public function activateTriples($tripleIds)
+    private function activateTriples($tripleIds)
     {
         $db = Context::getDB();
 

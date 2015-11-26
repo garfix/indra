@@ -18,17 +18,10 @@ interface TripleStore
     public function createBasicTables();
 
     /**
-     * @param Revision $revision
-     * @throws DataBaseException
-     */
-    public function storeRevision(Revision $revision);
-
-    /**
      * @param Object $object
-     * @param $objectId
-     * @return mixed
+     * @return void
      */
-    public function load(Object $object, $objectId);
+    public function load(Object $object);
 
     /**
      * @param Object $object
@@ -36,4 +29,24 @@ interface TripleStore
      * @throws Exception
      */
     public function save(Object $object);
+
+    /**
+     * @param Object $object
+     * @return void
+     */
+    public function remove(Object $object);
+
+    /**
+     * @param Revision $revision
+     * @throws DataBaseException
+     */
+    public function storeRevision(Revision $revision);
+
+    /**
+     * Perform $undoRevision to revert $revision.
+     *
+     * @param Revision $revision
+     * @param Revision $undoRevision
+     */
+    public function revertRevision(Revision $revision, Revision $undoRevision);
 }

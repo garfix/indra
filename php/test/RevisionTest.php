@@ -57,13 +57,11 @@ class RevisionTest extends TestBase
         // revert the revert
         $revisionModel->revertRevision($undoRevision);
 
-
         // test revert revert
         $customer3 = $customerModel->loadCustomer($id);
         $name = $customer3->getName();
         $this->assertEquals('Dr. Who', $name);
     }
 
-#todo: undo must be a new revision?
 #todo: saveCustomer niet toegestaan in revision model wereld
 }
