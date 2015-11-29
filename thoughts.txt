@@ -22,6 +22,21 @@
 - ook te implementeren als gedistribueerde database? evt
 - prevent double triples by locking; ook geen arrays?
 - nieuw datatype: reference (uuid)?
+- customization: de gebruiker moet ook overal bijkunnen en aanpassen
+- DummyViewStore voor als create-views = 0; idem voor andere features
+
+# Definitions
+
+- TypeDefinition: conceptual level representation of a type. It has attributes with names, but no ids.
+- Type: storage level representation of a type. It has ids.
+
+# todo
+
+integrate:
+
+        $classCreator->createClasses(CustomerPicket::class, $type);
+        $viewCreator->createView(new CustomerType());
+
 
 # Revisiebeheer
 
@@ -73,9 +88,22 @@ Nee dat is niet stuk. De triple store haalt net voor het opslaan het oude object
 
 # Tiers
 
-- storage: triple store
 - definition: type creation and management (setup and upgrade)
+- storage: triple store (bevat alle informatie over opslag in MySql)
 - application: php classes, my module
+
+- service: overkoepelend (de enige interface van de applicatieprogrammeur met het systeem)
+
+Idee
+
+// $configuration bevat de dependencies
+// indra is de hoofdindex voor definition
+$indra = new indra($configuration);
+$indra->createClasses();
+$indra->createView();
+$indra->createTables();
+
+Slecht idee, want je kan dat hier wel doen, maar niet bij bij bv. new CustomerModel();
 
 # Views
 

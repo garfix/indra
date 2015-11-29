@@ -33,6 +33,7 @@ class {{ className }}
     public function save{{ typeName }}({{ typeName }} $object)
     {
         Context::getTripleStore()->save($object);
+        Context::getViewStore()->updateView($object);
     }
 
     public function load{{ typeName }}($indraId)

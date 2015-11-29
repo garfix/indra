@@ -34,12 +34,14 @@ class TestBase extends PHPUnit_Framework_TestCase
     public static function tearDownAfterClass()
     {
         if (self::REMOVE_GENERATED_CLASSES) {
-            @unlink(__DIR__ . '/my_module/customer/Customer.php');
-            @unlink(__DIR__ . '/my_module/customer/CustomerModel.php');
-            @unlink(__DIR__ . '/my_module/customer/CustomerType.php');
-            @unlink(__DIR__ . '/my_module/supplier/Supplier.php');
-            @unlink(__DIR__ . '/my_module/supplier/SupplierModel.php');
-            @unlink(__DIR__ . '/my_module/supplier/SupplierType.php');
+//            @unlink(__DIR__ . '/my_module/customer/Customer.php');
+//            @unlink(__DIR__ . '/my_module/customer/CustomerModel.php');
+//            @unlink(__DIR__ . '/my_module/customer/CustomerType.php');
+//            @unlink(__DIR__ . '/my_module/customer/CustomerTableView.php');
+//            @unlink(__DIR__ . '/my_module/supplier/Supplier.php');
+//            @unlink(__DIR__ . '/my_module/supplier/SupplierModel.php');
+//            @unlink(__DIR__ . '/my_module/supplier/SupplierType.php');
+//            @unlink(__DIR__ . '/my_module/supplier/SupplierTableView.php');
         }
 
         $mysqli = Context::getMySqli();

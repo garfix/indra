@@ -1,0 +1,17 @@
+<?php
+
+namespace {{ namespace }};
+
+use indra\storage\TableView;
+
+/**
+ * This class was auto-generated. Do not change it, for it will be overwritten.
+ */
+class {{ className }} extends TableView
+{
+{{ tableViewColumns }}
+    public static function getTableName()
+    {
+        return '{{ tableName }}';
+    }
+}

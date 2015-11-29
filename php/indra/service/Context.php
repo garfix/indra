@@ -8,8 +8,10 @@ use indra\storage\DateTimeGenerator;
 use indra\storage\DB;
 use indra\storage\IdGenerator;
 use indra\storage\MySqlTripleStore;
+use indra\storage\MySqlViewStore;
 use indra\storage\RandomIdGenerator;
 use indra\storage\TripleStore;
+use indra\storage\ViewStore;
 use mysqli;
 
 /**
@@ -32,6 +34,9 @@ class Context
 
     /** @var  TripleStore */
     private static $tripleStore;
+
+    /** @var  ViewStore */
+    private static $viewStore;
 
     /** @var  IdGenerator */
     private static $idGenerator;
@@ -142,5 +147,21 @@ class Context
     public static function getTripleStore()
     {
         return self::$tripleStore ?: self::$tripleStore = new MySqlTripleStore();
+    }
+
+    /**
+     * @param ViewStore $viewStore
+     */
+    public static function setViewStore(ViewStore $viewStore)
+    {
+        self::$viewStore = $viewStore;
+    }
+
+    /**
+     * @return MySqlViewStore|ViewStore
+     */
+    public static function getViewStore()
+    {
+        return self::$viewStore ?: self::$viewStore = new MySqlViewStore();
     }
 }

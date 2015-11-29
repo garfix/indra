@@ -50,6 +50,19 @@ class ClassCreator
             $typeAttributes .= str_replace(array_keys($replacements), array_values($replacements), $attributeTemplate);
         }
 
+        $columnTemplate = file_get_contents(__DIR__ . '/../template/TableColumn.php.txt');
+
+        $tableViewColumns = "";
+        foreach ($typeDefinition->getAttributes() as $attribute) {
+
+            $replacements = [
+                '{{ columnName }}' => strtoupper($attribute->getName()),
+                '{{ columnId }}' => $attribute->getId(),
+            ];
+
+            $tableViewColumns .= str_replace(array_keys($replacements), array_values($replacements), $columnTemplate);
+        }
+
         if (preg_match('/^(.*)\\\\(.*)Picket$/', $locatorClass, $matches)) {
 
             $path = $matches[1];
@@ -63,11 +76,12 @@ class ClassCreator
 
             }
 
-            foreach (['Type', 'Model', ''] as $item) {
+            foreach (['Type', 'Model', 'Table', ''] as $item) {
                 $fileName = $item == '' ? 'Object' : $item;
                 $template = file_get_contents(__DIR__ . '/../template/' . $fileName . '.php.txt');
 
                 $className = $classNameBase . $item;
+                $tableName = 'indra_view_' . $classId;
 
                 $replacements = [
                     '{{ namespace }}' => $path,
@@ -76,6 +90,8 @@ class ClassCreator
                     '{{ typeName }}' => $classNameBase,
                     '{{ attributes }}' => $attributes,
                     '{{ typeAttributes }}' => $typeAttributes,
+                    '{{ tableViewColumns }}' => $tableViewColumns,
+                    '{{ tableName }}' => $tableName,
                     '{{ typeClassName }}' => $classNameBase . "Type",
                 ];
                 $contents = str_replace(array_keys($replacements), array_values($replacements), $template);
