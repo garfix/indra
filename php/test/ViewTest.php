@@ -1,13 +1,10 @@
 <?php
 
-use indra\definition\AttributeDefinition;
 use indra\definition\TypeDefinition;
-use indra\service\ClassCreator;
 use indra\service\Context;
 use indra\service\TypeModel;
 use my_module\customer\CustomerPicket;
 use my_module\customer\CustomerTable;
-use my_module\customer\CustomerType;
 use my_module\customer\CustomerModel;
 
 require_once __DIR__ . '/TestBase.php';
@@ -21,14 +18,10 @@ class ViewTest extends TestBase
     {
         parent::setUpBeforeClass();
 
-        $classCreator = new ClassCreator();
-
         $typeModel = new TypeModel();
 
         $type = new TypeDefinition();
-        $type->addAttribute(AttributeDefinition::create('name')
-            ->setDataTypeVarchar());
-        //$classCreator->createClasses(CustomerPicket::class, $type);
+        $type->addAttribute('name')->setDataTypeVarchar();
 
         $typeModel->addType(CustomerPicket::class, $type);
     }
@@ -36,7 +29,7 @@ class ViewTest extends TestBase
     public function testCreateView()
     {
         $model = new CustomerModel();
-        $type = new CustomerType();
+
         $customer = $model->createCustomer();
         $customer->setName('Dr. Jones');
         $model->saveCustomer($customer);

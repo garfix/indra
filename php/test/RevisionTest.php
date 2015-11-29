@@ -1,9 +1,8 @@
 <?php
 
-use indra\definition\AttributeDefinition;
 use indra\definition\TypeDefinition;
-use indra\service\ClassCreator;
 use indra\service\RevisionModel;
+use indra\service\TypeModel;
 use my_module\customer\CustomerModel;
 use my_module\customer\CustomerPicket;
 
@@ -18,12 +17,11 @@ class RevisionTest extends TestBase
     {
         parent::setUpBeforeClass();
 
-        $classCreator = new ClassCreator();
+        $typeModel = new TypeModel();
 
         $type = new TypeDefinition();
-        $type->addAttribute(AttributeDefinition::create('name')
-            ->setDataTypeVarchar());
-        $classCreator->createClasses(CustomerPicket::class, $type);
+        $type->addAttribute('name')->setDataTypeVarchar();
+        $typeModel->addType(CustomerPicket::class, $type);
     }
 
     public function testUndo()
