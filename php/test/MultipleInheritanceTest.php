@@ -2,14 +2,16 @@
 
 use indra\definition\AttributeDefinition;
 use indra\definition\TypeDefinition;
-use indra\object\Attribute;
 use indra\service\ClassCreator;
+use indra\service\Context;
+use indra\service\Domain;
+use indra\service\TypeModel;
 use my_module\customer\CustomerModel;
 use my_module\customer\CustomerPicket;
 use my_module\supplier\SupplierModel;
 use my_module\supplier\SupplierPicket;
 
-require __DIR__ . '/TestBase.php';
+require_once __DIR__ . '/TestBase.php';
 
 /**
  * @author Patrick van Bergen
@@ -19,31 +21,20 @@ class MultipleInheritanceTest extends TestBase
     public static function setUpBeforeClass()
     {
         parent::setUpBeforeClass();
-
-        $classCreator = new ClassCreator();
-
-        $name = AttributeDefinition::create('name')
-            ->setDataTypeVarchar();
-
-        $type = new TypeDefinition();
-        $type->addAttribute($name);
-        $classCreator->createClasses(CustomerPicket::class, $type);
-
-        $type = new TypeDefinition();
-        $type->addAttribute($name);
-        $classCreator->createClasses(SupplierPicket::class, $type);
+        parent::createCustomerType();
     }
 
     public function testMultipleTypes()
     {
-        $customerModel = new CustomerModel();
+        $domain = $domain = Domain::loadFromIni();
+        $customerModel = new CustomerModel($domain);
         $customer1 = $customerModel->createCustomer();
         $customer1->setName('Ms. Buyalot');
         $customerModel->saveCustomer($customer1);
 
         $objectId = $customer1->getId();
 
-        $supplierModel = new SupplierModel();
+        $supplierModel = new SupplierModel($domain);
         $supplier1 = $supplierModel->createSupplierFrom($customer1);
         $supplier1->setName('Mr. Musthave');
         $supplierModel->saveSupplier($supplier1);

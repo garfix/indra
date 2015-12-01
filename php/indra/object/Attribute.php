@@ -55,6 +55,15 @@ class Attribute
         return $this;
     }
 
+    /**
+     * @return $this
+     */
+    public function setDataTypeDate()
+    {
+        $this->properties['dataType'] = self::TYPE_DATE;
+        return $this;
+    }
+
     public function getDataType()
     {
         return $this->properties['dataType'];

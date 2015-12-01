@@ -1,5 +1,6 @@
 <?php
 
+use indra\definition\AttributeDefinition;
 use indra\definition\TypeDefinition;
 use indra\service\ClassCreator;
 use my_module\customer\CustomerPicket;
@@ -18,7 +19,7 @@ class CreateTypeTest extends TestBase
         $classCreator = new ClassCreator();
 
         $typeDefinition = new TypeDefinition();
-        $typeDefinition->addAttribute('name')->setDataTypeVarchar();
+        $typeDefinition->addAttribute(AttributeDefinition::create('name')->setDataTypeVarchar());
         $classCreator->createClasses(CustomerPicket::class, $typeDefinition);
 
         // test if customer class has been created

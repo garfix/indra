@@ -1,7 +1,9 @@
 <?php
 
+use indra\definition\AttributeDefinition;
 use indra\definition\TypeDefinition;
 use indra\service\Context;
+use indra\service\Domain;
 use indra\service\TypeModel;
 use my_module\customer\CustomerPicket;
 use my_module\customer\CustomerTable;
@@ -17,18 +19,13 @@ class ViewTest extends TestBase
     public static function setUpBeforeClass()
     {
         parent::setUpBeforeClass();
-
-        $typeModel = new TypeModel();
-
-        $type = new TypeDefinition();
-        $type->addAttribute('name')->setDataTypeVarchar();
-
-        $typeModel->addType(CustomerPicket::class, $type);
+        parent::createCustomerType();
     }
 
     public function testCreateView()
     {
-        $model = new CustomerModel();
+        $domain = Domain::loadFromIni();
+        $model = new CustomerModel($domain);
 
         $customer = $model->createCustomer();
         $customer->setName('Dr. Jones');

@@ -156,11 +156,13 @@ class MySqlTripleStore implements TripleStore
                 $tripleData = $this->getTripleData($objectId, $attributeId, $attribute->getDataType());
 
                 // if so, the old value must be deactivated
-                if ($tripleData['value'] !== $attributeValues[$attributeId]) {
-                    $this->deactivateTriple($tripleData['triple_id'], $objectId, $attributeId, $tripleData['value'], $attribute->getDataType());
+                if ($tripleData) {
+                    if ($tripleData['value'] !== $attributeValues[$attributeId]) {
+                        $this->deactivateTriple($tripleData['triple_id'], $objectId, $attributeId, $tripleData['value'], $attribute->getDataType());
 
-                    if ($revisionId !== null) {
-                        $this->writeRevisionAction($revisionId, RevisionAction::ACTION_DEACTIVATE, $tripleData['triple_id']);
+                        if ($revisionId !== null) {
+                            $this->writeRevisionAction($revisionId, RevisionAction::ACTION_DEACTIVATE, $tripleData['triple_id']);
+                        }
                     }
                 }
 

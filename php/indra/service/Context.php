@@ -35,9 +35,6 @@ class Context
     /** @var  TripleStore */
     private static $tripleStore;
 
-    /** @var  ViewStore */
-    private static $viewStore;
-
     /** @var  IdGenerator */
     private static $idGenerator;
 
@@ -47,11 +44,13 @@ class Context
     /**
      * Removes all services. After this, if a new service is requested, it will be created anew.
      */
-    public static function resetAllServices()
+    public function resetAllServices()
     {
         self::$tripleStore = null;
         self::$mysqli = null;
         self::$idGenerator = null;
+        self::$dateTimeGenerator = null;
+        self::$db = null;
     }
 
     /**
@@ -147,21 +146,5 @@ class Context
     public static function getTripleStore()
     {
         return self::$tripleStore ?: self::$tripleStore = new MySqlTripleStore();
-    }
-
-    /**
-     * @param ViewStore $viewStore
-     */
-    public static function setViewStore(ViewStore $viewStore)
-    {
-        self::$viewStore = $viewStore;
-    }
-
-    /**
-     * @return MySqlViewStore|ViewStore
-     */
-    public static function getViewStore()
-    {
-        return self::$viewStore ?: self::$viewStore = new MySqlViewStore();
     }
 }

@@ -1,11 +1,14 @@
 <?php
 
+use indra\definition\AttributeDefinition;
 use indra\definition\TypeDefinition;
+use indra\service\Context;
+use indra\service\Domain;
 use indra\service\TypeModel;
 use my_module\customer\CustomerModel;
 use my_module\customer\CustomerPicket;
 
-require __DIR__ . '/TestBase.php';
+require_once __DIR__ . '/TestBase.php';
 
 /**
  * @author Patrick van Bergen
@@ -15,19 +18,13 @@ class CreateObjectTest extends TestBase
     public static function setUpBeforeClass()
     {
         parent::setUpBeforeClass();
-
-        $typeModel = new TypeModel();
-
-        $type = new TypeDefinition();
-        $type->addAttribute('name')
-            ->setDataTypeVarchar();
-
-        $typeModel->addType(CustomerPicket::class, $type);
+        parent::createCustomerType();
     }
 
     public function testCreateObject()
     {
-        $model = new CustomerModel();
+        $domain = Domain::loadFromIni();
+        $model = new CustomerModel($domain);
 
         $customer = $model->createCustomer();
         $this->assertNotEmpty($customer->getId());
@@ -43,7 +40,8 @@ class CreateObjectTest extends TestBase
 
     public function testUpdateObject()
     {
-        $model = new CustomerModel();
+        $domain = Domain::loadFromIni();
+        $model = new CustomerModel($domain);
 
         $customer = $model->createCustomer();
         $customer->setName('Dr. Jones');
@@ -61,7 +59,8 @@ class CreateObjectTest extends TestBase
 
     public function testRemoveObject()
     {
-        $model = new CustomerModel();
+        $domain = Domain::loadFromIni();
+        $model = new CustomerModel($domain);
 
         $customer = $model->createCustomer();
         $customer->setName('Dr. Jones');

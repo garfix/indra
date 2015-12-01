@@ -1,7 +1,13 @@
 <?php
 
+use indra\definition\AttributeDefinition;
+use indra\definition\TypeDefinition;
 use indra\service\Context;
+use indra\service\Domain;
 use indra\service\TableCreator;
+use indra\service\TypeModel;
+use my_module\customer\CustomerPicket;
+use my_module\supplier\SupplierPicket;
 
 /**
  * @author Patrick van Bergen
@@ -17,6 +23,23 @@ class TestBase extends PHPUnit_Framework_TestCase
 
         $tableCreator = new TableCreator();
         $tableCreator->createBasicTables();
+    }
+
+    protected static function createCustomerType()
+    {
+        $domain = Domain::loadFromIni();
+        $typeModel = new TypeModel($domain);
+
+        $name = AttributeDefinition::create('name')->setDataTypeVarchar();
+
+        $type = new TypeDefinition();
+        $type->addAttribute($name);
+        $type->addAttribute(AttributeDefinition::create('birthDate')->setDataTypeDate());
+        $typeModel->addType(CustomerPicket::class, $type);
+
+        $type = new TypeDefinition();
+        $type->addAttribute($name);
+        $typeModel->addType(SupplierPicket::class, $type);
     }
 
     public function setUp()

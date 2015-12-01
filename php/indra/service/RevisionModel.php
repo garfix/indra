@@ -3,7 +3,6 @@
 namespace indra\service;
 
 use indra\storage\Revision;
-use indra\storage\RevisionAction;
 
 /**
  * @author Patrick van Bergen

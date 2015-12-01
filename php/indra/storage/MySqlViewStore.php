@@ -2,7 +2,6 @@
 
 namespace indra\storage;
 
-use indra\definition\TypeDefinition;
 use indra\object\Object;
 use indra\object\Type;
 use indra\service\Context;
@@ -42,13 +41,21 @@ class MySqlViewStore implements ViewStore
         $db = Context::getDB();
         $type = $object->getType();
         $viewTableName = "indra_view_" . $type->getId();
+        $attributeValues = $object->getAttributeValues();
 
         $id = $object->getId();
 
         $values = "";
-        foreach ($object->getAttributeValues() as $attributeId => $attributeValue) {
+        foreach ($type->getAttributes() as $attribute) {
+
+            if (isset($attributeValues[$attribute->getId()])) {
+                $attributeValue = "'" . $db->esc($attributeValues[$attribute->getId()]) . "'";
+            } else {
+                $attributeValue = 'null';
+            }
+
             $values .= $values ? ", " : "";
-            $values .= "`" . $attributeId . "` = '" . $db->esc($attributeValue) . "'";
+            $values .= "`" . $attribute->getId() . "` = " . $attributeValue;
         }
 
         $db->execute("

@@ -4,11 +4,12 @@ namespace {{ namespace }};
 
 use indra\service\Context;
 use indra\object\Object;
+use indra\object\Model;
 
 /**
  * This class was auto-generated. Do not change it, for it will be overwritten.
  */
-class {{ className }}
+class {{ className }} extends Model
 {
     /**
      * @return {{ typeName }}
@@ -33,7 +34,7 @@ class {{ className }}
     public function save{{ typeName }}({{ typeName }} $object)
     {
         Context::getTripleStore()->save($object);
-        Context::getViewStore()->updateView($object);
+        $this->domain->getViewStore()->updateView($object);
     }
 
     public function load{{ typeName }}($indraId)

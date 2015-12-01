@@ -24,11 +24,30 @@
 - nieuw datatype: reference (uuid)?
 - customization: de gebruiker moet ook overal bijkunnen en aanpassen
 - DummyViewStore voor als create-views = 0; idem voor andere features
+- Ik denk aan een decorator pattern voor geneste contexten: Context / Branch / Revision / Model
+- opgesplitst: Context (voor systeem-dependencies) en Domain (voor domein-specifieke dependencies)
 
 # Definitions
 
 - TypeDefinition: conceptual level representation of a type. It has attributes with names, but no ids.
 - Type: storage level representation of a type. It has ids.
+
+# branching en merging
+
+- tabel indra_branch (branch_id, source_id, user_id, time)
+- oh, ja nieuwe tabel voor indra gebruikers: indra_user(user_id, extra_id, name) // extra_id koppelt de gebruiker aan een ander pakket
+- neem ook de branch_id op in de user?
+- veralgemeniseer de inactive tabel voor alle niet-master branches?
+    nee, beter is denk ik een indra_branch_int, indra_branch_varchar, ... voor de actieve niet-master triples
+    ook mogelijk is een branch_id toevoegen aan de triple tabellen; voor de onderhoudbaarheid het makkelijkst;
+        is wel jammer als geen branching wordt gebruikt; en overigens over het algemeen dataverspilling
+- revisie moet ook worden uitgebreid met branch_id
+- merge branch b1 in b2: voor alle objecten in branch b1, zoek eerst het object in b2, overschrijf de waarden met die in b1. schrijf weg
+- maak view-tabellen aan on-demand: als er voor het eerst om gevraagd wordt.
+- aanmaken view: 1) haal alle ids op; 2) bouw alle objecten op met (getCustomer(id)) of met getCustomers()). Voor iedere customer wordt dan eerst
+    gekeken of die in de huidige branch bestaat, en zo niet: in de source branch (probleem: hij kan verwijderd zijn in de huidige branch)
+- er wordt NIET gequeried in de triple store (behalve voor het opbouwen van views, natuurlijk)
+- branches worden niet verwijderd als ze gemergd worden
 
 # todo
 
@@ -156,3 +175,7 @@ table indra_revision_triple;
 triple_id, time,
 
 table indra_revision_int;
+
+# en verder
+
+- beetje jammer een 22-byte id voor attributen; kan wel wat minder
