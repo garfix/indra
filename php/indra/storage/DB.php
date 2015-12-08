@@ -2,7 +2,6 @@
 
 namespace indra\storage;
 
-use Generator;
 use indra\exception\DataBaseException;
 use indra\service\Context;
 
@@ -11,6 +10,17 @@ use indra\service\Context;
  */
 class DB
 {
+    /** @var  bool */
+    private $echoQueries;
+
+    /**
+     * @param $echo
+     */
+    public function setEchoQueries($echo = true)
+    {
+        $this->echoQueries = $echo;
+    }
+
     /**
      * @param mixed $value
      * @return string
@@ -24,17 +34,29 @@ class DB
     }
 
     /**
+     * @param $query
+     * @return bool|\mysqli_result
+     * @throws DataBaseException
+     */
+    private function query($query)
+    {
+        if ($this->echoQueries) {
+            var_dump($query);
+        }
+
+        return Context::getMySqli()->query($query);
+    }
+
+    /**
      * @param string $query
      * @throws DataBaseException
      */
     public function execute($query)
     {
-        $mysqli = Context::getMySqli();
-
-        $resultSet = $mysqli->query($query);
+        $resultSet = $this->query($query);
 
         if (!$resultSet) {
-            throw new DataBaseException("MySQL error: " . mysqli_error($mysqli));
+            throw new DataBaseException("MySQL error: " . mysqli_error(Context::getMySqli()));
         }
     }
 
@@ -45,9 +67,7 @@ class DB
      */
     public function queryMultipleRows($query)
     {
-        $mysqli = Context::getMySqli();
-
-        $resultSet = $mysqli->query($query);
+        $resultSet = $this->query($query);
 
         if ($resultSet) {
             $rows = [];
@@ -56,7 +76,7 @@ class DB
             }
             return $rows;
         } else {
-            throw new DataBaseException("MySQL error: " . mysqli_error($mysqli));
+            throw new DataBaseException("MySQL error: " . mysqli_error(Context::getMySqli()));
         }
     }
 
@@ -67,9 +87,7 @@ class DB
      */
     public function querySingleColumn($query)
     {
-        $mysqli = Context::getMySqli();
-
-        $resultSet = $mysqli->query($query);
+        $resultSet = $this->query($query);
 
         if ($resultSet) {
             $rows = [];
@@ -78,7 +96,7 @@ class DB
             }
             return $rows;
         } else {
-            throw new DataBaseException("MySQL error: " . mysqli_error($mysqli));
+            throw new DataBaseException("MySQL error: " . mysqli_error(Context::getMySqli()));
         }
     }
 
@@ -89,9 +107,7 @@ class DB
      */
     public function querySingleRow($query)
     {
-        $mysqli = Context::getMySqli();
-
-        $resultSet = $mysqli->query($query);
+        $resultSet = $this->query($query);
 
         if ($resultSet) {
             if ($result = $resultSet->fetch_assoc()) {
@@ -100,7 +116,7 @@ class DB
                 return null;
             }
         } else {
-            throw new DataBaseException("MySQL error: " . mysqli_error($mysqli));
+            throw new DataBaseException("MySQL error: " . mysqli_error(Context::getMySqli()));
         }
     }
 
@@ -111,16 +127,14 @@ class DB
      */
     public function querySingleCell($query)
     {
-        $mysqli = Context::getMySqli();
-
-        $resultSet = $mysqli->query($query);
+        $resultSet = $this->query($query);
 
         if ($resultSet) {
             while ($result = $resultSet->fetch_assoc()) {
                 return reset($result);
             }
         } else {
-            throw new DataBaseException("MySQL error: " . mysqli_error($mysqli));
+            throw new DataBaseException("MySQL error: " . mysqli_error(Context::getMySqli()));
         }
     }
 }

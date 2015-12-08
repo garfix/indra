@@ -18,18 +18,21 @@ class Object
     /** @var mixed[] */
     protected $attributes = [];
 
-    public function __construct(Type $type)
+public $loadedAttributeValues = [];
+
+    public function __construct(Type $type, $id)
     {
         $this->type = $type;
-    }
-
-    /**
-     * @param string $id
-     */
-    public function setId($id)
-    {
         $this->id = $id;
     }
+
+//    /**
+//     * @param string $id
+//     */
+//    public function setId($id)
+//    {
+//        $this->id = $id;
+//    }
 
     /**
      * @return string An indra identifier.
@@ -58,6 +61,7 @@ class Object
     public function setAttributeValues($attributeValues)
     {
 #todo check!!!
+$this->loadedAttributeValues = $attributeValues;
         $this->attributes = $attributeValues;
     }
 }

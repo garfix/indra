@@ -85,6 +85,19 @@ class MySqlTripleStore implements TripleStore
                         unique key triple (`triple_id`)
                     ) engine InnoDB {$info['encoding']}
                 ");
+
+                $db->execute("
+                    CREATE TABLE IF NOT EXISTS indra_branch_{$state}_{$name} (
+                        `branch_id` binary(22) not null,
+                        `triple_id` binary(22) not null,
+                        `object_id` binary(22) not null,
+                        `attribute_id` binary(22) not null,
+                        `value` {$info['type']} not null,
+                        primary key object (`branch_id`, `object_id`, `attribute_id`, {$info['key']}),
+                        unique key attribute (`branch_id`, `attribute_id`, {$info['key']}),
+                        unique key triple (`triple_id`)
+                    ) engine InnoDB {$info['encoding']}
+                ");
             }
         }
 
@@ -93,6 +106,7 @@ class MySqlTripleStore implements TripleStore
 					`revision_id`				binary(22) not null,
 					`revision_datetime` 		datetime not null,
 					`revision_description` 		varchar(255),
+					`source_revision_id` 		binary(22),
 					`username`				    varchar(255),
 					primary key (`revision_id`),
 					key (`revision_datetime`)
@@ -107,14 +121,14 @@ class MySqlTripleStore implements TripleStore
 					PRIMARY KEY  (`revision_id`, `triple_id`)
             ) engine InnoDB
         ");
-//
-//        $db->execute("
-//            CREATE TABLE IF NOT EXISTS indra_revision_object (
-//					`revision_id`				binary(22) not null,
-//					`object_id`					binary(22) not null
-//					PRIMARY KEY  (`revision_id`, `object_id`)
-//            ) engine InnoDB
-//        ");
+
+        $db->execute("
+            CREATE TABLE IF NOT EXISTS indra_branch (
+					`branch_id`				    binary(22) not null,
+					`revision_id` 		        binary(22) not null,
+					primary key (`branch_id`)
+            ) engine InnoDB
+        ");
     }
 
     /**
@@ -130,20 +144,54 @@ class MySqlTripleStore implements TripleStore
             INSERT INTO `indra_revision`
               SET
                   `revision_id` = '" . $revision->getId() . "',
+                  `source_revision_id` = '" . $revision->getSourceRevision()->getId() . "',
                   `revision_description` = '" . $db->esc($revision->getDescription()) . "',
                   `revision_datetime` = '" . $dateTime->format('Y-m-d H:i:s') . "'
         ");
     }
 
-    public function save(Object $object, $revisionId = null)
+    public function saveBranch(Branch $branch)
     {
+        $db = Context::getDB();
+        $revisionId = $branch->getActiveRevision()->getId();
+
+        $db->execute("
+            INSERT INTO `indra_branch`
+                SET
+                      `branch_id` = '" . $branch->getId() . "',
+                      `revision_id` = '" . $revisionId . "'
+                ON DUPLICATE KEY UPDATE
+                       `revision_id` = '" . $revisionId . "'
+        ");
+    }
+
+//    public function loadBranch($branchId)
+//    {
+//        $db = Context::getDB();
+//
+//        $db->querySingleRow("
+//            SELECT `revision_id`
+//            FROM `indra_branch`
+//            WHERE `branch_id` = '" . $branchId . "'
+//        ");
+//
+//        $revision = new Revision();
+//    }
+
+    public function save(Object $object, Revision $revision, Branch $branch)
+    {
+        $revisionId = $revision->getId();
         $type = $object->getType();
         $attributeValues = $object->getAttributeValues();
         $objectId = $object->getId();
 
         // type
-        $tripleId = $this->writeTriple($objectId, self::ATTRIBUTE_TYPE_ID, $type->getId(), Attribute::TYPE_VARCHAR, true);
-        $this->writeRevisionAction($revisionId, RevisionAction::ACTION_ACTIVATE, $tripleId);
+        if ($tripleId = $this->writeTriple($objectId, self::ATTRIBUTE_TYPE_ID, $type->getId(), Attribute::TYPE_VARCHAR, true, $branch)) {
+#todo: only if the type changes
+            if (1) {
+                $this->writeRevisionAction($revisionId, RevisionAction::ACTION_ACTIVATE, $tripleId);
+            }
+        }
 
         // attributes
         foreach ($type->getAttributes() as $attribute) {
@@ -153,32 +201,29 @@ class MySqlTripleStore implements TripleStore
             if (isset($attributeValues[$attributeId])) {
 
                 // check if the value has changed
-                $tripleData = $this->getTripleData($objectId, $attributeId, $attribute->getDataType());
+                $tripleData = $this->getTripleData($objectId, $attributeId, $attribute->getDataType(), $branch);
 
                 // if so, the old value must be deactivated
                 if ($tripleData) {
                     if ($tripleData['value'] !== $attributeValues[$attributeId]) {
-                        $this->deactivateTriple($tripleData['triple_id'], $objectId, $attributeId, $tripleData['value'], $attribute->getDataType());
-
-                        if ($revisionId !== null) {
-                            $this->writeRevisionAction($revisionId, RevisionAction::ACTION_DEACTIVATE, $tripleData['triple_id']);
-                        }
+                        $this->deactivateTriple($tripleData['triple_id'], $objectId, $attributeId, $tripleData['value'], $attribute->getDataType(), $branch);
+                        $this->writeRevisionAction($revisionId, RevisionAction::ACTION_DEACTIVATE, $tripleData['triple_id']);
                     }
                 }
 
-                $tripleId = $this->writeTriple($objectId, $attributeId, $attributeValues[$attributeId], $attribute->getDataType(), true);
-                $this->writeRevisionAction($revisionId, RevisionAction::ACTION_ACTIVATE, $tripleId);
+                if ($tripleId = $this->writeTriple($objectId, $attributeId, $attributeValues[$attributeId], $attribute->getDataType(), true, $branch)) {
+
+                    if (!isset($object->loadedAttributeValues[$attributeId]) || ($object->loadedAttributeValues[$attributeId] != $attributeValues[$attributeId])) {
+                        $this->writeRevisionAction($revisionId, RevisionAction::ACTION_ACTIVATE, $tripleId);
+                    }
+}
             }
         }
-
-//        if ($revisionId) {
-//            $this->writeRevisionObject($revisionId, $objectId);
-//        }
     }
 
-    public function load(Object $object)
+    public function load(Object $object, Branch $branch)
     {
-        list($attributeValues, $typeFound) = $this->getAttributeValues($object);
+        list($attributeValues, $typeFound) = $this->getAttributeValues($object, $branch);
 
         if (!$typeFound) {
             throw new ObjectCreationError('No object of this type and id found.');
@@ -191,7 +236,7 @@ class MySqlTripleStore implements TripleStore
         $object->setAttributeValues($attributeValues);
     }
 
-    public function remove(Object $object)
+    public function remove(Object $object, Branch $branch)
     {
         $db = Context::getDB();
 
@@ -212,12 +257,24 @@ class MySqlTripleStore implements TripleStore
                 $attributeId = $result['attribute_id'];
                 $attributeValue = $result['value'];
 
-                $this->deactivateTriple($tripleId, $objectId, $attributeId, $attributeValue, $dataType);
+                $this->deactivateTriple($tripleId, $objectId, $attributeId, $attributeValue, $dataType, $branch);
             }
         }
     }
 
-    public function revertRevision(Revision $revision, Revision $undoRevision)
+    public function getSourceRevisionId($revisionId)
+    {
+        $db = Context::getDB();
+
+        return $db->querySingleCell("
+            SELECT `source_revision_id`
+            FROM `indra_revision`
+            WHERE `revision_id` = '" . $revisionId . "'
+        ");
+
+    }
+
+    public function revertRevision(Branch $branch, Revision $revision, Revision $undoRevision)
     {
         $this->storeRevision($undoRevision);
 
@@ -233,8 +290,8 @@ class MySqlTripleStore implements TripleStore
             }
         }
 
-        $this->deactivateTriples($deactivationTripleIds);
-        $this->activateTriples($activationTripleIds);
+        $this->moveTriples($branch, $branch, $deactivationTripleIds, true, false);
+        $this->moveTriples($branch, $branch, $activationTripleIds, false, true);
     }
 
 //    public function getRevisionObjectIds(Revision $revision)
@@ -266,6 +323,14 @@ class MySqlTripleStore implements TripleStore
     {
         $db = Context::getDB();
 
+        if ($revisionId === null) {
+            return;
+        }
+
+        if ($revisionId == BaseRevision::ID) {
+            return;
+        }
+
         $db->execute("
             INSERT INTO `indra_revision_action`
               SET
@@ -275,17 +340,20 @@ class MySqlTripleStore implements TripleStore
         ");
     }
 
-    private function getTripleData($objectId, $attributeId, $dataType)
+    private function getTripleData($objectId, $attributeId, $dataType, Branch $branch)
     {
+        $branchToken = ($branch instanceof MasterBranch) ? '' : 'branch_';
+        $branchClause = ($branch instanceof MasterBranch) ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
+
         return Context::getDB()->querySingleRow("
             SELECT `triple_id`, `value`
-            FROM indra_active_" . $dataType . "
+            FROM indra_{$branchToken}active_" . $dataType . "
             WHERE
+                {$branchClause}
                 `object_id` = '" . $objectId . "' AND
                 `attribute_id` = '" . $attributeId . "'
         ");
     }
-
 
     /**
      * @param Revision $revision
@@ -311,20 +379,23 @@ class MySqlTripleStore implements TripleStore
         return $actions;
     }
 
-    private function getAttributeValues(Object $object)
+    private function getAttributeValues(Object $object, Branch $branch)
     {
         $db = Context::getDB();
 
         $type = $object->getType();
         $objectId = $object->getId();
         $attributeValues = [];
+        $branchToken = ($branch instanceof MasterBranch) ? '' : 'branch_';
+        $branchClause = ($branch instanceof MasterBranch) ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
         $typeFound = false;
 
         foreach ($this->getDataTypesOfType($type) as $dataType) {
 
             $results = $db->queryMultipleRows("
-              SELECT `attribute_id`, `value` FROM indra_active_" . $dataType . "
+              SELECT `attribute_id`, `value` FROM indra_{$branchToken}active_" . $dataType . "
               WHERE
+                {$branchClause}
                 `object_id` = '" . $objectId . "'
             ");
 
@@ -374,20 +445,23 @@ class MySqlTripleStore implements TripleStore
      * @param $attributeValue
      * @param $dataType
      * @param bool $active
-     * @return string Triple id
+     * @return string|null Triple id If (object/attribute/value) already existed, return null; otherwise: the new triple id
      * @throws DataBaseException
      */
-    private function writeTriple($objectId, $attributeId, $attributeValue, $dataType, $active)
+    private function writeTriple($objectId, $attributeId, $attributeValue, $dataType, $active, Branch $branch)
     {
         $db = Context::getDB();
 
-        $tripleId = Context::getIdGenerator()->generateId();
         $activeness = $active ? 'active' : 'inactive';
+
+        $branchToken = ($branch instanceof MasterBranch) ? '' : 'branch_';
+        $branchClause = ($branch instanceof MasterBranch) ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
 
         $exists = $db->querySingleCell("
                     SELECT COUNT(*)
-                    FROM indra_" . $activeness . "_" . $dataType . "
+                    FROM indra_" . $branchToken . $activeness . "_" . $dataType . "
                     WHERE
+                        {$branchClause}
                         `object_id` = '" . $objectId . "' AND
                         `attribute_id` = '" . $attributeId . "' AND
                         `value` = '" . $db->esc($attributeValue) . "'
@@ -395,26 +469,37 @@ class MySqlTripleStore implements TripleStore
 
         if (!$exists) {
 
+            $branchClause = ($branch instanceof MasterBranch) ? "" : "`branch_id` = '" . $branch->getId() . "',\n";
+
+            $tripleId = Context::getIdGenerator()->generateId();
+
             $db->execute("
-                        INSERT INTO indra_" . $activeness . "_" . $dataType . "
-                        SET
-                            `triple_id` = '" . $tripleId . "',
-                            `object_id` = '" . $objectId . "',
-                            `attribute_id` = '" . $attributeId . "',
-                            `value` = '" . $db->esc($attributeValue) . "'
+                INSERT IGNORE INTO indra_" . $branchToken . $activeness . "_" . $dataType . "
+                SET
+                    {$branchClause}
+                    `triple_id` = '" . $tripleId . "',
+                    `object_id` = '" . $objectId . "',
+                    `attribute_id` = '" . $attributeId . "',
+                    `value` = '" . $db->esc($attributeValue) . "'
                     ");
+
+            return $tripleId;
         }
 
-        return $tripleId;
+        return null;
     }
 
-    private function deactivateTriple($tripleId, $objectId, $attributeId, $attributeValue, $dataType)
+    private function deactivateTriple($tripleId, $objectId, $attributeId, $attributeValue, $dataType, Branch $branch)
     {
         $db = Context::getDB();
 
+        $branchToken = ($branch instanceof MasterBranch) ? '' : 'branch_';
+        $branchClause = ($branch instanceof MasterBranch) ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
+
         $db->execute("
-                    INSERT INTO indra_inactive_" . $dataType . "
+                    INSERT INTO indra_{$branchToken}inactive_" . $dataType . "
                     SET
+                        {$branchClause}
                         `triple_id` = '" . $tripleId . "',
                         `object_id` = '" . $objectId . "',
                         `attribute_id` = '" . $attributeId . "',
@@ -422,14 +507,49 @@ class MySqlTripleStore implements TripleStore
                 ");
 
         $db->execute("
-                    DELETE FROM indra_active_" . $dataType . "
+                    DELETE FROM indra_{$branchToken}active_" . $dataType . "
                     WHERE
                         `triple_id` = '" . $tripleId . "'
                 ");
 
     }
 
-    private function deactivateTriples($tripleIds)
+//    private function deactivateTriples(Branch $fromBranch, Branch $toBranch, $tripleIds)
+//    {
+//        $db = Context::getDB();
+//
+//        if (empty($tripleIds)) {
+//            return;
+//        }
+//
+//
+//        $fromBranchToken = ($fromBranch instanceof MasterBranch) ? '' : 'branch_';
+//        $fromBranchClause = ($fromBranch instanceof MasterBranch) ? "" : "`branch_id` = '" . $fromBranch->getId() . "' AND\n";
+//
+//        $toBranchToken = ($toBranch instanceof MasterBranch) ? '' : 'branch_';
+//        $toBranchClause = ($toBranch instanceof MasterBranch) ? "" : "`branch_id` = '" . $toBranch->getId() . "' AND\n";
+//
+//        foreach ($this->getAllDataTypes() as $dataType) {
+//
+//            $db->execute("
+//                INSERT INTO `indra_{$toBranchToken}inactive_" . $dataType . "` (`triple_id`, `object_id`, `attribute_id`, `value`)
+//                SELECT `triple_id`, `object_id`, `attribute_id`, `value`
+//                FROM `indra_{$fromBranchToken}active_" . $dataType . "`
+//                WHERE
+//                    {$fromBranchClause}
+//                    `triple_id` IN ('" . implode("', '", $tripleIds) . "')
+//            ");
+//
+//            $db->execute("
+//                DELETE FROM indra_{$fromBranchToken}active_" . $dataType . "
+//                WHERE
+//                    {$fromBranchClause}
+//                    `triple_id` IN ('" . implode("', '", $tripleIds) . "')
+//            ");
+//        }
+//    }
+
+    private function moveTriples(Branch $fromBranch, Branch $toBranch, $tripleIds, $fromActive, $toActive)
     {
         $db = Context::getDB();
 
@@ -437,47 +557,67 @@ class MySqlTripleStore implements TripleStore
             return;
         }
 
+        $fromBranchToken = ($fromBranch instanceof MasterBranch) ? '' : 'branch_';
+        $fromBranchClause = ($fromBranch instanceof MasterBranch) ? "" : "`branch_id` = '" . $fromBranch->getId() . "' AND\n";
+        $fromActiveness = $fromActive ? 'active_' : 'inactive_';
+
+        $toBranchToken = ($toBranch instanceof MasterBranch) ? '' : 'branch_';
+        $toBranchClause = ($toBranch instanceof MasterBranch) ? "" : "`branch_id` = '" . $toBranch->getId() . "' AND\n";
+        $toActiveness = $toActive ? 'active_' : 'inactive_';
+
         foreach ($this->getAllDataTypes() as $dataType) {
 
+
+//            $db->execute("
+//                INSERT INTO `indra_{$toBranchToken}active_" . $dataType . "` (`triple_id`, `object_id`, `attribute_id`, `value`)
+//                SELECT `triple_id`, `object_id`, `attribute_id`, `value`
+//                FROM `indra_{$fromBranchToken}inactive_" . $dataType . "`
+//                WHERE
+//                    {$fromBranchClause}
+//                    `triple_id` IN ('" . implode("', '", $tripleIds) . "')
+//            ");
+
             $db->execute("
-                INSERT INTO `indra_inactive_" . $dataType . "` (`triple_id`, `object_id`, `attribute_id`, `value`)
+                INSERT ignore INTO `indra_{$toBranchToken}{$toActiveness}" . $dataType . "` (`triple_id`, `object_id`, `attribute_id`, `value`)
                 SELECT `triple_id`, `object_id`, `attribute_id`, `value`
-                FROM `indra_active_" . $dataType . "`
+                FROM `indra_{$fromBranchToken}{$fromActiveness}" . $dataType . "`
                 WHERE
+                    {$fromBranchClause}
                     `triple_id` IN ('" . implode("', '", $tripleIds) . "')
             ");
 
+            $swapActiveness = $toActiveness == 'active_' ? 'inactive_' : 'active_';
+
             $db->execute("
-                DELETE FROM indra_active_" . $dataType . "
+                DELETE FROM indra_{$fromBranchToken}{$swapActiveness}" . $dataType . "
                 WHERE
+                    {$fromBranchClause}
                     `triple_id` IN ('" . implode("', '", $tripleIds) . "')
             ");
         }
     }
 
-    private function activateTriples($tripleIds)
+    public function mergeRevisions(Branch $fromBranch, Branch $toBranch, Revision $mergeRevision, $revisionIds)
     {
-        $db = Context::getDB();
+// make sure that there are no activations and deactivations of the same revision
+        $this->storeRevision($mergeRevision);
 
-        if (empty($tripleIds)) {
-            return;
+        $activationTripleIds = [];
+        $deactivationTripleIds = [];
+        foreach ($revisionIds as $revisionId) {
+            $revision = new Revision($revisionId);
+            foreach ($this->getRevisionActions($revision) as $revisionAction) {
+                if ($revisionAction->getAction() == RevisionAction::ACTION_ACTIVATE) {
+                    $activationTripleIds[] = $revisionAction->getTripleId();
+                    $this->writeRevisionAction($mergeRevision->getId(), RevisionAction::ACTION_ACTIVATE, $revisionAction->getTripleId());
+                } else {
+                    $deactivationTripleIds[] = $revisionAction->getTripleId();
+                    $this->writeRevisionAction($mergeRevision->getId(), RevisionAction::ACTION_DEACTIVATE, $revisionAction->getTripleId());
+                }
+            }
         }
 
-        foreach ($this->getAllDataTypes() as $dataType) {
-
-            $db->execute("
-                INSERT INTO `indra_active_" . $dataType . "` (`triple_id`, `object_id`, `attribute_id`, `value`)
-                SELECT `triple_id`, `object_id`, `attribute_id`, `value`
-                FROM `indra_inactive_" . $dataType . "`
-                WHERE
-                    `triple_id` IN ('" . implode("', '", $tripleIds) . "')
-            ");
-
-            $db->execute("
-                DELETE FROM indra_inactive_" . $dataType . "
-                WHERE
-                    `triple_id` IN ('" . implode("', '", $tripleIds) . "')
-            ");
-        }
+        $this->moveTriples($fromBranch, $toBranch, $deactivationTripleIds, false, false);
+        $this->moveTriples($fromBranch, $toBranch, $activationTripleIds, true, true);
     }
 }

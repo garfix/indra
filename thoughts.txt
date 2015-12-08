@@ -19,6 +19,7 @@
 - verschillende typen kunnen attributen delen. Ik wil dat volledige ongerelateerde typen (niet verbonden door een gemeenschappelijke ouder) toch dezelfde attribuut kunnen hebben
     (niet alleen de naam, echt dezelfde) Voorbeeld-attribuut: date modified
 - object-level locking
+- met loadCustomers($ids) meerdere customers, maar ook subklassen in 1x kunnen laden
 - ook te implementeren als gedistribueerde database? evt
 - prevent double triples by locking; ook geen arrays?
 - nieuw datatype: reference (uuid)?
@@ -26,6 +27,10 @@
 - DummyViewStore voor als create-views = 0; idem voor andere features
 - Ik denk aan een decorator pattern voor geneste contexten: Context / Branch / Revision / Model
 - opgesplitst: Context (voor systeem-dependencies) en Domain (voor domein-specifieke dependencies)
+- ik wil objecten eigenlijk niet verzamelen in een save-list bij een revision, ik wil dat ze meteen opgeslagen worden. Op die manier kun je ze meteen gebruiken in een query.
+- aan de andere kant is het heel goed om alle wijzigingen eerst te verzamelen voordat ze worden weggeschreven. objecten die eerst gewijzigd worden en daarna verwijderd bijvoorbeeld. De wijzigingen wil je dan niet opslaan.
+
+- Branchmodel en revisionmodel mogen eruit.
 
 # Definitions
 
@@ -49,6 +54,30 @@
 - er wordt NIET gequeried in de triple store (behalve voor het opbouwen van views, natuurlijk)
 - branches worden niet verwijderd als ze gemergd worden
 
+# Merge
+
+
+!! HIERO !!
+
+neem $fromActive en $toActive parameters op in de activateTriple functies
+maar eigenlijk wil je dit met minder gedoe
+maar eerst de unit tests werkend krijgen!
+
+
+- Een branch is technisch gezien alleen een tag van een revisie.
+- NB: een revisie heeft GEEN branch verwijzing; een branch heeft een revisie verwijzing
+- Iedere revisie heeft een verwijzing naar een eerdere revisie.
+
+Bij het mergen van b1 naar b2:
+
+- Zoek terug in b1
+- Zoek terug in b2
+- Vind de eerste gemeenschappelijke revisie rg
+- In chrono volgorde: pas de revisies van b1 na rg toe op b2
+- Al deze acties komen in een nieuwe revisie terecht: rn (dit is de merge-commit)
+- rn wordt toegevoegd aan b2
+- b1 wordt gekoppeld aan dezelfde revisie als b2
+
 # todo
 
 integrate:
@@ -56,6 +85,13 @@ integrate:
         $classCreator->createClasses(CustomerPicket::class, $type);
         $viewCreator->createView(new CustomerType());
 
+# $customerModel->saveCustomer($customer);
+
+$customerModel->saveCustomer($customer);
+
+Als er geen revisie actief is wordt $customer meteen opgeslagen
+
+Als er wel een revisie actief is wordt $customer toegevoegd aan de saveList van de revisie
 
 # Revisiebeheer
 
@@ -105,11 +141,20 @@ Dat is stuk, maar ook niet waarschijnlijk in een request. En daarnaast kan de tr
 
 Nee dat is niet stuk. De triple store haalt net voor het opslaan het oude object op. Bij het opslaan worden alle attributen (mogelijk opnieuw) geschreven.
 
+- Het is niet mogelijk tabel-wijzigingen in een revisie op te nemen
+- De data is afhankelijk van de code. Beter gezegd: applicatie-data is afhankelijk van definitie data.
+    In de database staat data die alleen gemaakt kon worden met code die door definitie-code is gemaakt. Als de definitie code verandert, en dus de applicatie-code,
+    dan kun je de oude data van de database niet (helemaal) meer gebruiken.
+- Dit is niet superbelangrijk, maar je moet er wel wat mee.
+
 # Tiers
+
+Houd deze tiers strikt gescheiden: effecten van acties in de 1 hebben invloed op die van andere tiers
 
 - definition: type creation and management (setup and upgrade)
 - storage: triple store (bevat alle informatie over opslag in MySql)
 - application: php classes, my module
+- branching en merging
 
 - service: overkoepelend (de enige interface van de applicatieprogrammeur met het systeem)
 
@@ -179,3 +224,13 @@ table indra_revision_int;
 # en verder
 
 - beetje jammer een 22-byte id voor attributen; kan wel wat minder
+
+#        $revision->addToSaveList($customer);
+//$domain->getRevisionModel()->storeRevision($revision);
+//$domain->getBranchModel()->storeBranchRevision($branch, $revision);
+
+# check out
+
+- http://www.liquibase.org/
+- https://exversiondata.wordpress.com/2013/08/27/version-control-for-data/
+

@@ -18,6 +18,17 @@ class TestBase extends PHPUnit_Framework_TestCase
 
     public static function setUpBeforeClass()
     {
+        if (self::REMOVE_GENERATED_CLASSES) {
+            @unlink(__DIR__ . '/my_module/customer/Customer.php');
+            @unlink(__DIR__ . '/my_module/customer/CustomerModel.php');
+            @unlink(__DIR__ . '/my_module/customer/CustomerType.php');
+            @unlink(__DIR__ . '/my_module/customer/CustomerTable.php');
+            @unlink(__DIR__ . '/my_module/supplier/Supplier.php');
+            @unlink(__DIR__ . '/my_module/supplier/SupplierModel.php');
+            @unlink(__DIR__ . '/my_module/supplier/SupplierType.php');
+            @unlink(__DIR__ . '/my_module/supplier/SupplierTable.php');
+        }
+
         require_once __DIR__ . '/../autoloader.php';
         require_once __DIR__ . '/my_module/test_autoloader.php';
 
@@ -48,6 +59,11 @@ class TestBase extends PHPUnit_Framework_TestCase
         $mysqli->autocommit(false);
     }
 
+    public function test()
+    {
+
+    }
+
     public function tearDown()
     {
         $mysqli = Context::getMySqli();
@@ -56,17 +72,6 @@ class TestBase extends PHPUnit_Framework_TestCase
 
     public static function tearDownAfterClass()
     {
-        if (self::REMOVE_GENERATED_CLASSES) {
-//            @unlink(__DIR__ . '/my_module/customer/Customer.php');
-//            @unlink(__DIR__ . '/my_module/customer/CustomerModel.php');
-//            @unlink(__DIR__ . '/my_module/customer/CustomerType.php');
-//            @unlink(__DIR__ . '/my_module/customer/CustomerTableView.php');
-//            @unlink(__DIR__ . '/my_module/supplier/Supplier.php');
-//            @unlink(__DIR__ . '/my_module/supplier/SupplierModel.php');
-//            @unlink(__DIR__ . '/my_module/supplier/SupplierType.php');
-//            @unlink(__DIR__ . '/my_module/supplier/SupplierTableView.php');
-        }
-
         $mysqli = Context::getMySqli();
         $mysqli->close();
     }

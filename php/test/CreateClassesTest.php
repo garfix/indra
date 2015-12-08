@@ -24,7 +24,7 @@ class CreateTypeTest extends TestBase
 
         // test if customer class has been created
         // NB: it is correct that this class does not exist at compile time. That's exactly the point :)
-        $customer = new Customer(new CustomerType());
+        $customer = new Customer(new CustomerType(), \indra\service\Context::getIdGenerator()->generateId());
 
         $this->assertEquals(true, $customer instanceof Customer);
     }

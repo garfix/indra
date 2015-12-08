@@ -5,6 +5,7 @@ namespace {{ namespace }};
 use indra\service\Context;
 use indra\object\Object;
 use indra\object\Model;
+use indra\storage\BaseRevision;
 
 /**
  * This class was auto-generated. Do not change it, for it will be overwritten.
@@ -17,41 +18,46 @@ class {{ className }} extends Model
     public function create{{ typeName }}()
     {
         $type = $this->getType();
-        $object = new {{ typeName }}($type);
-        $object->setId(Context::getIdGenerator()->generateId());
+        $object = new {{ typeName }}($type, Context::getIdGenerator()->generateId());
         return $object;
     }
 
     public function create{{ typeName }}From(Object $existingObject)
     {
         $type = $this->getType();
-        $object = new {{ typeName }}($type);
-        $object->setId($existingObject->getId());
+        $object = new {{ typeName }}($type, $existingObject->getId());
         $object->setAttributeValues($existingObject->getAttributeValues());
         return $object;
     }
 
     public function save{{ typeName }}({{ typeName }} $object)
     {
-        Context::getTripleStore()->save($object);
-        $this->domain->getViewStore()->updateView($object);
+        $revision = $this->domain->getActiveRevision();
+        $branch = $this->domain->getActiveBranch();
+
+        if ($this->domain->usesRevisions()) {
+            $revision->addToSaveList($object);
+        } else {
+            Context::getTripleStore()->save($object, $revision, $branch);
+            $this->domain->getViewStore()->updateView($object);
+        }
     }
 
     public function load{{ typeName }}($indraId)
     {
-        $object = new {{ typeName }}($this->getType());
-        $object->setId($indraId);
-        Context::getTripleStore()->load($object);
+        $object = new {{ typeName }}($this->getType(), $indraId);
+        Context::getTripleStore()->load($object, $this->domain->getActiveBranch());
         return $object;
     }
 
     public function remove{{ typeName }}({{ typeName }} $object)
     {
-        Context::getTripleStore()->remove($object);
+        Context::getTripleStore()->remove($object, $this->domain->getActiveBranch());
     }
 
     private $type;
 
+#todo: this function should be generated inside Object.php.txt and not injected in Object
     private function getType()
     {
         return $this->type ?: $this->type = new {{ typeClassName }};

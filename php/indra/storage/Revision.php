@@ -11,18 +11,21 @@ use indra\object\Object;
 class Revision
 {
     /** @var  string */
-    private $description;
+    private $id;
 
     /** @var  string */
-    private $id;
+    private $description;
+
+    /** @var  Revision */
+    private $sourceRevision;
 
     /** @var Object[] */
     public $saveList = [];
 
-    public function __construct($description)
+    public function __construct($id)
     {
-        $this->description = $description;
-        $this->id = Context::getIdGenerator()->generateId();
+//        $this->description = $description;
+        $this->id = $id;
     }
 
     /**
@@ -31,6 +34,30 @@ class Revision
     public function getId()
     {
         return $this->id;
+    }
+
+    /**
+     * @param Revision $revision
+     */
+    public function setSourceRevision(Revision $revision)
+    {
+        $this->sourceRevision = $revision;
+    }
+
+    /**
+     * @return Revision
+     */
+    public function getSourceRevision()
+    {
+        return $this->sourceRevision;
+    }
+
+    /**
+     * @param $description
+     */
+    public function setDescription($description)
+    {
+        $this->description = $description;
     }
 
     /**

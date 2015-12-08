@@ -26,7 +26,7 @@ class MultipleInheritanceTest extends TestBase
 
     public function testMultipleTypes()
     {
-        $domain = $domain = Domain::loadFromIni();
+        $domain = Domain::loadFromSettings(false);
         $customerModel = new CustomerModel($domain);
         $customer1 = $customerModel->createCustomer();
         $customer1->setName('Ms. Buyalot');

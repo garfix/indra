@@ -1,7 +1,11 @@
 <?php
 
 namespace indra\service;
+use indra\storage\BaseRevision;
+use indra\storage\Branch;
+use indra\storage\MasterBranch;
 use indra\storage\MySqlViewStore;
+use indra\storage\Revision;
 use indra\storage\ViewStore;
 
 /**
@@ -13,16 +17,40 @@ class Domain
     /** @var  ViewStore */
     private $viewStore;
 
-    /** @var  RevisionModel */
-    private $RevisionModel;
+//    /** @var  RevisionModel */
+//    private $RevisionModel;
+
+    /** @var Branch */
+    private $activeBranch = null;
 
     /** @var  BranchModel */
     private $BranchModel;
+
+    /** @var  Revision */
+    private $activeRevision = null;
+
+    /** @var bool  */
+    private $useRevisions = false;
 
     public static function loadFromIni()
     {
 #todo: load from ini
         return new Domain();
+    }
+
+    public static function loadFromSettings($useRevisions = false)
+    {
+        return new Domain($useRevisions);
+    }
+
+    public function __construct($useRevisions = false)
+    {
+        $this->useRevisions = $useRevisions;
+    }
+
+    public function usesRevisions()
+    {
+        return $this->useRevisions;
     }
 
     /**
@@ -42,34 +70,174 @@ class Domain
     }
 
     /**
-     * @param RevisionModel $RevisionModel
+     * @return Branch
      */
-    public function setRevisionModel(RevisionModel $RevisionModel)
+    public function startNewBranch()
     {
-        $this->RevisionModel = $RevisionModel;
+        $this->activeBranch = new Branch();
+
+        return $this->activeBranch;
     }
 
     /**
-     * @return RevisionModel
+     * @param Branch $branch
      */
-    public function getRevisionModel()
+    public function startBranch(Branch $branch)
     {
-        return $this->RevisionModel ?: $this->RevisionModel = new RevisionModel();
+        $this->activeBranch = $branch;
     }
 
     /**
-     * @param BranchModel $BranchModel
+     * @return MasterBranch
      */
-    public function setBranchModel(BranchModel $BranchModel)
+    public function getActiveBranch()
     {
-        $this->BranchModel = $BranchModel;
+        return $this->activeBranch ?: $this->activeBranch = new MasterBranch();
+    }
+
+//
+//    /**
+//     * @param RevisionModel $RevisionModel
+//     */
+//    public function setRevisionModel(RevisionModel $RevisionModel)
+//    {
+//        $this->RevisionModel = $RevisionModel;
+//    }
+//
+//    /**
+//     * @return RevisionModel
+//     */
+//    public function getRevisionModel()
+//    {
+//        return $this->RevisionModel ?: $this->RevisionModel = new RevisionModel();
+//    }
+
+//    /**
+//     * @param BranchModel $BranchModel
+//     */
+//    public function setBranchModel(BranchModel $BranchModel)
+//    {
+//        $this->BranchModel = $BranchModel;
+//    }
+//
+//    /**
+//     * @return BranchModel
+//     */
+//    public function getBranchModel()
+//    {
+//        return $this->BranchModel ?: $this->BranchModel = new BranchModel();
+//    }
+
+    public function createRevision($description)
+    {
+        $revision = new Revision(Context::getIdGenerator()->generateId());
+        $revision->setSourceRevision($this->getActiveRevision());
+        $revision->setDescription($description);
+
+        $this->activeRevision = $revision;
+
+        return $revision;
     }
 
     /**
-     * @return BranchModel
+     * @return Revision
      */
-    public function getBranchModel()
+    public function getActiveRevision()
     {
-        return $this->BranchModel ?: $this->BranchModel = new BranchModel();
+        return $this->activeRevision ?: $this->activeRevision = new BaseRevision();
+    }
+
+    public function commitRevision(Revision $revision)
+    {
+        $tripleStore = Context::getTripleStore();
+        $branch = $this->getActiveBranch();
+
+        // store the revision
+        $tripleStore->storeRevision($revision);
+
+        // link current branch to new revision
+        $branch->setActiveRevision($revision);
+
+        // store the branch
+        $tripleStore->saveBranch($branch);
+
+        // add the changes to the revision
+        foreach ($revision->getSaveList() as $object) {
+            $tripleStore->save($object, $revision, $this->getActiveBranch());
+            $this->getViewStore()->updateView($object);
+        }
+    }
+
+    /**
+     * @param Branch $source
+     */
+    public function mergeBranch(Branch $source, Branch $target)
+    {
+        $tripleStore = Context::getTripleStore();
+
+        // find all revisions of $branch after the common revision
+        $revisionIds = $this->findMergeableRevisions($target, $source);
+
+        // apply these revisions to the other branch
+        $mergeRevision = new Revision(Context::getIdGenerator()->generateId());
+        $mergeRevision->setSourceRevision($target->getActiveRevision());
+        $target->setActiveRevision($mergeRevision);
+        $tripleStore->mergeRevisions($source, $target, $mergeRevision, $revisionIds);
+        $tripleStore->saveBranch($target);
+    }
+
+    private function findMergeableRevisions(Branch $branch1, Branch $branch2)
+    {
+        $tripleStore = Context::getTripleStore();
+
+        $branch1Revisions = [];
+        $branch2Revisions = [];
+
+        $branch1RevisionId = $branch1->getActiveRevision()->getId();
+        $branch2RevisionId = $branch2->getActiveRevision()->getId();
+
+        do {
+
+            $branch1Revisions[] = $branch1RevisionId;
+            $branch2Revisions[] = $branch2RevisionId;
+
+            $branch1Source = $tripleStore->getSourceRevisionId($branch1RevisionId);
+            $branch2Source = $tripleStore->getSourceRevisionId($branch2RevisionId);
+
+//var_dump($branch1Source);
+//var_dump($branch2Source);
+
+            // common revision found!
+            if (in_array($branch2Source, $branch1Revisions)) {
+                break;
+            }
+            if (in_array($branch1Source, $branch2Revisions)) {
+                break;
+            }
+
+            $branch1RevisionId = $branch1Source;
+            $branch2RevisionId = $branch2Source;
+
+        } while ($branch1RevisionId != BaseRevision::ID);
+
+        return array_reverse($branch2Revisions);
+    }
+
+    /**
+     * Undoes all actions of $revision.
+     *
+     * @param Revision $revision
+     * @return Revision The undo revision
+     */
+    public function revertRevision(Revision $revision)
+    {
+        $tripleStore = Context::getTripleStore();
+
+        $undoRevision = $this->createRevision(sprintf("Undo revision %s (%s)",
+            $revision->getId(), $revision->getDescription()));
+
+        $tripleStore->revertRevision($this->getActiveBranch(), $revision, $undoRevision);
+
+        return $undoRevision;
     }
 }

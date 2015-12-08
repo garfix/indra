@@ -24,27 +24,28 @@ class RevisionTest extends TestBase
 
     public function testUndo()
     {
-        $domain = Domain::loadFromIni();
-        $revisionModel = $domain->getRevisionModel();
+        $domain = Domain::loadFromSettings(true);
+#        $revisionModel = $domain->getRevisionModel();
         $customerModel = new CustomerModel($domain);
 
         $customer = $customerModel->createCustomer();
         $id = $customer->getId();
 
         // initial name
-        $revision = $revisionModel->createRevision('Add customer Dr. Jones');
+        $revision = $domain->createRevision('Add customer Dr. Jones');
         $customer->setName('Dr. Jones');
-        $revision->addToSaveList($customer);
-        $revisionModel->saveRevision($revision);
+        #$revision->addToSaveList($customer);
+        $customerModel->saveCustomer($customer);
+        $domain->commitRevision($revision);
 
         // change name
-        $revision = $revisionModel->createRevision('Dr. Jones renamed to Dr. Who');
+        $revision = $domain->createRevision('Dr. Jones renamed to Dr. Who');
         $customer->setName('Dr. Who');
-        $revision->addToSaveList($customer);
-        $revisionModel->saveRevision($revision);
+        $customerModel->saveCustomer($customer);
+        $domain->commitRevision($revision);
 
         // revert change
-        $undoRevision = $revisionModel->revertRevision($revision);
+        $undoRevision = $domain->revertRevision($revision);
 
         // test revert
         $customer2 = $customerModel->loadCustomer($id);
@@ -52,7 +53,7 @@ class RevisionTest extends TestBase
         $this->assertEquals('Dr. Jones', $name);
 
         // revert the revert
-        $revisionModel->revertRevision($undoRevision);
+        $domain->revertRevision($undoRevision);
 
         // test revert revert
         $customer3 = $customerModel->loadCustomer($id);
