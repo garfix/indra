@@ -32,12 +32,12 @@ class {{ className }} extends Model
 
     public function save{{ typeName }}({{ typeName }} $object)
     {
-        $revision = $this->domain->getActiveRevision();
         $branch = $this->domain->getActiveBranch();
 
         if ($this->domain->usesRevisions()) {
-            $revision->addToSaveList($object);
+            $this->domain->addToSaveList($object);
         } else {
+            $revision = $this->domain->getActiveRevision();
             Context::getTripleStore()->save($object, $revision, $branch);
             $this->domain->getViewStore()->updateView($object);
         }

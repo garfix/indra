@@ -25,33 +25,30 @@ class MergeBranchesTest extends TestBase
 
         $domain = Domain::loadFromSettings(true);
         $customerModel = new CustomerModel($domain);
-#\indra\service\Context::getDB()->setEchoQueries();
-        $revision = $domain->createRevision('Add customer Dr. Jones');
+
         $customer = $customerModel->createCustomer();
         $customerId = $customer->getId();
         $customer->setName('Dr. Jones');
         $customer->setBirthDate('1969-11-24');
         $customerModel->saveCustomer($customer);
-        $domain->commitRevision($revision);
+        $domain->commit('Add customer Dr. Jones');
 
         // start new branch and change customer
 $customer = $customerModel->loadCustomer($customerId);
         $branch = $domain->startNewBranch();
-        $revision = $domain->createRevision('Change customer name to Dr. Who');
 
 #todo: dit moet ook werken
 //        $customer = $customerModel->loadCustomer($customerId);
         $customer->setName('Dr. Who');
         $customerModel->saveCustomer($customer);
-        $domain->commitRevision($revision);
+        $domain->commit('Change customer name to Dr. Who');
 
         // change in master branch
         $domain->startBranch($master);
-        $revision = $domain->createRevision('Change birth date to 1971-09-23');
         $customer = $customerModel->loadCustomer($customerId);
         $customer->setBirthDate('1971-09-23');
         $customerModel->saveCustomer($customer);
-        $domain->commitRevision($revision);
+        $domain->commit('Change birth date to 1971-09-23');
 
         // test that the two objects have separated
         $domain->startBranch($master);

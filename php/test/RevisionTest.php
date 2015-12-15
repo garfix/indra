@@ -25,24 +25,21 @@ class RevisionTest extends TestBase
     public function testUndo()
     {
         $domain = Domain::loadFromSettings(true);
-#        $revisionModel = $domain->getRevisionModel();
         $customerModel = new CustomerModel($domain);
 
         $customer = $customerModel->createCustomer();
         $id = $customer->getId();
 
         // initial name
-        $revision = $domain->createRevision('Add customer Dr. Jones');
         $customer->setName('Dr. Jones');
         #$revision->addToSaveList($customer);
         $customerModel->saveCustomer($customer);
-        $domain->commitRevision($revision);
+        $domain->commit('Add customer Dr. Jones');
 
         // change name
-        $revision = $domain->createRevision('Dr. Jones renamed to Dr. Who');
         $customer->setName('Dr. Who');
         $customerModel->saveCustomer($customer);
-        $domain->commitRevision($revision);
+        $revision = $domain->commit('Dr. Jones renamed to Dr. Who');
 
         // revert change
         $undoRevision = $domain->revertRevision($revision);

@@ -19,9 +19,6 @@ class Revision
     /** @var  Revision */
     private $sourceRevision;
 
-    /** @var Object[] */
-    public $saveList = [];
-
     public function __construct($id)
     {
 //        $this->description = $description;
@@ -66,21 +63,5 @@ class Revision
     public function getDescription()
     {
         return $this->description;
-    }
-
-    /**
-     * @param Object $object
-     */
-    public function addToSaveList(Object $object)
-    {
-        $this->saveList[] = $object;
-    }
-
-    /**
-     * @return Object[]
-     */
-    public function getSaveList()
-    {
-        return $this->saveList;
     }
 }

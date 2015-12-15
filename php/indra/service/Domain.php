@@ -1,6 +1,8 @@
 <?php
 
 namespace indra\service;
+
+use indra\object\Object;
 use indra\storage\BaseRevision;
 use indra\storage\Branch;
 use indra\storage\MasterBranch;
@@ -31,6 +33,9 @@ class Domain
 
     /** @var bool  */
     private $useRevisions = false;
+
+    /** @var Object[] */
+    private $saveList = [];
 
     public static function loadFromIni()
     {
@@ -95,40 +100,12 @@ class Domain
         return $this->activeBranch ?: $this->activeBranch = new MasterBranch();
     }
 
-//
-//    /**
-//     * @param RevisionModel $RevisionModel
-//     */
-//    public function setRevisionModel(RevisionModel $RevisionModel)
-//    {
-//        $this->RevisionModel = $RevisionModel;
-//    }
-//
-//    /**
-//     * @return RevisionModel
-//     */
-//    public function getRevisionModel()
-//    {
-//        return $this->RevisionModel ?: $this->RevisionModel = new RevisionModel();
-//    }
+    public function addToSaveList(Object $Object)
+    {
+        $this->saveList[] = $Object;
+    }
 
-//    /**
-//     * @param BranchModel $BranchModel
-//     */
-//    public function setBranchModel(BranchModel $BranchModel)
-//    {
-//        $this->BranchModel = $BranchModel;
-//    }
-//
-//    /**
-//     * @return BranchModel
-//     */
-//    public function getBranchModel()
-//    {
-//        return $this->BranchModel ?: $this->BranchModel = new BranchModel();
-//    }
-
-    public function createRevision($description)
+    private function createRevision($description)
     {
         $revision = new Revision(Context::getIdGenerator()->generateId());
         $revision->setSourceRevision($this->getActiveRevision());
@@ -147,10 +124,14 @@ class Domain
         return $this->activeRevision ?: $this->activeRevision = new BaseRevision();
     }
 
-    public function commitRevision(Revision $revision)
+    public function commit($commitDescription)
     {
         $tripleStore = Context::getTripleStore();
         $branch = $this->getActiveBranch();
+
+        $revision = new Revision(Context::getIdGenerator()->generateId());
+        $revision->setSourceRevision($this->getActiveRevision());
+        $revision->setDescription($commitDescription);
 
         // store the revision
         $tripleStore->storeRevision($revision);
@@ -162,10 +143,16 @@ class Domain
         $tripleStore->saveBranch($branch);
 
         // add the changes to the revision
-        foreach ($revision->getSaveList() as $object) {
+        foreach ($this->saveList as $object) {
             $tripleStore->save($object, $revision, $this->getActiveBranch());
             $this->getViewStore()->updateView($object);
         }
+
+        $this->saveList = [];
+
+        $this->activeRevision = $revision;
+
+        return $revision;
     }
 
     /**
