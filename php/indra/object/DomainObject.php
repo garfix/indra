@@ -7,7 +7,7 @@ namespace indra\object;
  *
  * @author Patrick van Bergen
  */
-class Object
+class DomainObject
 {
     /** @var  Type */
     protected $type;

@@ -2,7 +2,7 @@
 
 namespace indra\service;
 
-use indra\object\Object;
+use indra\object\DomainObject;
 use indra\storage\BaseRevision;
 use indra\storage\Branch;
 use indra\storage\MasterBranch;
@@ -100,7 +100,7 @@ class Domain
         return $this->activeBranch ?: $this->activeBranch = new MasterBranch();
     }
 
-    public function addToSaveList(Object $Object)
+    public function addToSaveList(DomainObject $Object)
     {
         $this->saveList[] = $Object;
     }

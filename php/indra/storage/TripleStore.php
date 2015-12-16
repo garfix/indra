@@ -4,7 +4,7 @@ namespace indra\storage;
 
 use Exception;
 use indra\exception\DataBaseException;
-use indra\object\Object;
+use indra\object\DomainObject;
 
 /**
  * @author Patrick van Bergen
@@ -21,7 +21,7 @@ interface TripleStore
      * @param Object|Object $object
      * @param Branch $branch
      */
-    public function load(Object $object, Branch $branch);
+    public function load(DomainObject $object, Branch $branch);
 
     /**
      * @param Object|Object $object
@@ -29,13 +29,13 @@ interface TripleStore
      * @param Branch $branch
      * @return
      */
-    public function save(Object $object, Revision $revision, Branch $branch);
+    public function save(DomainObject $object, Revision $revision, Branch $branch);
 
     /**
      * @param Object|Object $object
      * @param Branch $branch
      */
-    public function remove(Object $object, Branch $branch);
+    public function remove(DomainObject $object, Branch $branch);
 
     /**
      * @param Revision $revision

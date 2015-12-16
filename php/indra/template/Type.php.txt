@@ -4,6 +4,7 @@ namespace {{ namespace }};
 
 use indra\object\Attribute;
 use indra\object\Type;
+use indra\storage\TableView;
 
 /**
  * This class was auto-generated. Do not change it, for it will be overwritten.
@@ -21,5 +22,13 @@ class {{ className }} extends Type
     public function getId()
     {
         return '{{ classId }}';
+    }
+
+    /**
+     * @return TableView
+     */
+    public function getTableView()
+    {
+        return new {{ tableClassName }}();
     }
 }

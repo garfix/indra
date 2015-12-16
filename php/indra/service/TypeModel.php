@@ -12,10 +12,10 @@ class TypeModel extends Model
 {
 #todo should not extend model
 
-    public function addType($locatorClass, TypeDefinition $type)
+    public function addType($locatorClass, TypeDefinition $typeDefinition)
     {
         $classCreator = new ClassCreator();
-        $classCreator->createClasses($locatorClass, $type);
+        $classCreator->createClasses($locatorClass, $typeDefinition);
 
         preg_match('/^(.*)\\\\(.*)Picket$/', $locatorClass, $matches);
 

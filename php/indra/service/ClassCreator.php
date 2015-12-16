@@ -21,7 +21,6 @@ class ClassCreator
         $reflector = new ReflectionClass($locatorClass);
         $locatorClassPath = dirname($reflector->getFileName());
         $classId = Context::getIdGenerator()->generateId();
-
         $attributeTemplate = file_get_contents(__DIR__ . '/../template/Attribute.php.txt');
 
         $attributes = "";
@@ -92,6 +91,7 @@ class ClassCreator
                     '{{ typeAttributes }}' => $typeAttributes,
                     '{{ tableViewColumns }}' => $tableViewColumns,
                     '{{ tableName }}' => $tableName,
+                    '{{ tableClassName }}' => $classNameBase . "Table",
                     '{{ typeClassName }}' => $classNameBase . "Type",
                 ];
                 $contents = str_replace(array_keys($replacements), array_values($replacements), $template);

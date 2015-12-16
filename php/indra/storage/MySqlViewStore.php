@@ -2,7 +2,7 @@
 
 namespace indra\storage;
 
-use indra\object\Object;
+use indra\object\DomainObject;
 use indra\object\Type;
 use indra\service\Context;
 
@@ -14,7 +14,8 @@ class MySqlViewStore implements ViewStore
     public function createView(Type $type)
     {
         $db = Context::getDB();
-        $viewTableName = "indra_view_" . $type->getId();
+#todo: this is a static call!
+        $viewTableName = $type->getTableView()->getTableName();
 
         $columns = [];
 
@@ -36,7 +37,7 @@ class MySqlViewStore implements ViewStore
         ");
     }
 
-    public function updateView(Object $object)
+    public function updateView(DomainObject $object)
     {
         $db = Context::getDB();
         $type = $object->getType();

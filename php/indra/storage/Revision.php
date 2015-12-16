@@ -3,7 +3,7 @@
 namespace indra\storage;
 
 use indra\service\Context;
-use indra\object\Object;
+use indra\object\DomainObject;
 
 /**
  * @author Patrick van Bergen

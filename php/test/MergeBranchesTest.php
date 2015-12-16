@@ -5,16 +5,16 @@ use indra\storage\BaseRevision;
 use indra\storage\MasterBranch;
 use my_module\customer\CustomerModel;
 
-require_once __DIR__ . '/TestBase.php';
+require_once __DIR__ . '/Base.php';
 
 /**
  * @author Patrick van Bergen
  */
-class MergeBranchesTest extends TestBase
+class MergeBranchesTest extends Base
 {
     public static function setUpBeforeClass()
     {
-        parent::setUpBeforeClass();
+        parent::initialize();
         parent::createCustomerType();
     }
 

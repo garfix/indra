@@ -1,23 +1,18 @@
 <?php
 
-use indra\definition\AttributeDefinition;
-use indra\definition\TypeDefinition;
-use indra\service\Context;
 use indra\service\Domain;
-use indra\service\TypeModel;
 use my_module\customer\CustomerModel;
-use my_module\customer\CustomerPicket;
 
-require_once __DIR__ . '/TestBase.php';
+require_once __DIR__ . '/Base.php';
 
 /**
  * @author Patrick van Bergen
  */
-class CreateObjectTest extends TestBase
+class CreateObjectTest extends Base
 {
     public static function setUpBeforeClass()
     {
-        parent::setUpBeforeClass();
+        parent::initialize();
         parent::createCustomerType();
     }
 

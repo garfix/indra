@@ -2,7 +2,7 @@
 
 namespace indra\storage;
 
-use indra\object\Object;
+use indra\object\DomainObject;
 use indra\object\Type;
 
 /**
@@ -12,5 +12,5 @@ interface ViewStore
 {
     public function createView(Type $type);
 
-    public function updateView(Object $object);
+    public function updateView(DomainObject $object);
 }

@@ -3,7 +3,7 @@
 namespace {{ namespace }};
 
 use indra\service\Context;
-use indra\object\Object;
+use indra\object\DomainObject;
 use indra\object\Model;
 use indra\storage\BaseRevision;
 
@@ -22,7 +22,7 @@ class {{ className }} extends Model
         return $object;
     }
 
-    public function create{{ typeName }}From(Object $existingObject)
+    public function create{{ typeName }}From(DomainObject $existingObject)
     {
         $type = $this->getType();
         $object = new {{ typeName }}($type, $existingObject->getId());

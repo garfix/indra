@@ -3,29 +3,42 @@
 use indra\definition\AttributeDefinition;
 use indra\definition\TypeDefinition;
 use indra\service\ClassCreator;
-use my_module\customer\CustomerPicket;
-use my_module\customer\CustomerType;
-use my_module\customer\Customer;
+use indra\service\TableCreator;
+use my_module\product\ProductPicket;
+use my_module\product\ProductType;
+use my_module\product\Product;
 
-require __DIR__ . '/TestBase.php';
+require __DIR__ . '/Base.php';
 
 /**
  * @author Patrick van Bergen
  */
-class CreateTypeTest extends TestBase
+class CreateTypeTest extends Base
 {
+    public static function setUpBeforeClass()
+    {
+        $tableCreator = new TableCreator();
+        $tableCreator->createBasicTables();
+
+        @unlink(__DIR__ . '/my_module/product/Product.php');
+        @unlink(__DIR__ . '/my_module/product/ProductModel.php');
+        @unlink(__DIR__ . '/my_module/product/ProductType.php');
+        @unlink(__DIR__ . '/my_module/product/ProductTable.php');
+    }
+
     public function testCreateClasses()
     {
         $classCreator = new ClassCreator();
 
         $typeDefinition = new TypeDefinition();
         $typeDefinition->addAttribute(AttributeDefinition::create('name')->setDataTypeVarchar());
-        $classCreator->createClasses(CustomerPicket::class, $typeDefinition);
+        $typeDefinition->addAttribute(AttributeDefinition::create('introductionDate')->setDataTypeDate());
+        $classCreator->createClasses(ProductPicket::class, $typeDefinition);
 
         // test if customer class has been created
         // NB: it is correct that this class does not exist at compile time. That's exactly the point :)
-        $customer = new Customer(new CustomerType(), \indra\service\Context::getIdGenerator()->generateId());
+        $product = new Product(new ProductType(), \indra\service\Context::getIdGenerator()->generateId());
 
-        $this->assertEquals(true, $customer instanceof Customer);
+        $this->assertEquals(true, $product instanceof Product);
     }
 }

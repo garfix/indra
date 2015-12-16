@@ -9,14 +9,17 @@ use indra\service\TypeModel;
 use my_module\customer\CustomerPicket;
 use my_module\supplier\SupplierPicket;
 
+require_once __DIR__ . '/../autoloader.php';
+require_once __DIR__ . '/my_module/test_autoloader.php';
+
 /**
  * @author Patrick van Bergen
  */
-class TestBase extends PHPUnit_Framework_TestCase
+class Base extends PHPUnit_Framework_TestCase
 {
     const REMOVE_GENERATED_CLASSES = true;
 
-    public static function setUpBeforeClass()
+    public static function initialize()
     {
         if (self::REMOVE_GENERATED_CLASSES) {
             @unlink(__DIR__ . '/my_module/customer/Customer.php');
@@ -29,9 +32,6 @@ class TestBase extends PHPUnit_Framework_TestCase
             @unlink(__DIR__ . '/my_module/supplier/SupplierTable.php');
         }
 
-        require_once __DIR__ . '/../autoloader.php';
-        require_once __DIR__ . '/my_module/test_autoloader.php';
-
         $tableCreator = new TableCreator();
         $tableCreator->createBasicTables();
     }
@@ -40,7 +40,6 @@ class TestBase extends PHPUnit_Framework_TestCase
     {
         $domain = Domain::loadFromIni();
         $typeModel = new TypeModel($domain);
-
         $name = AttributeDefinition::create('name')->setDataTypeVarchar();
 
         $type = new TypeDefinition();
@@ -74,5 +73,6 @@ class TestBase extends PHPUnit_Framework_TestCase
     {
         $mysqli = Context::getMySqli();
         $mysqli->close();
+        Context::setMySqli(null);
     }
 }

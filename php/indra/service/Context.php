@@ -88,7 +88,7 @@ class Context
     /**
      * @param mysqli $mysqli
      */
-    public static function setMySqli(mysqli $mysqli)
+    public static function setMySqli(mysqli $mysqli = null)
     {
         self::$mysqli = $mysqli;
     }

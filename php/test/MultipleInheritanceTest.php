@@ -1,26 +1,19 @@
 <?php
 
-use indra\definition\AttributeDefinition;
-use indra\definition\TypeDefinition;
-use indra\service\ClassCreator;
-use indra\service\Context;
 use indra\service\Domain;
-use indra\service\TypeModel;
 use my_module\customer\CustomerModel;
-use my_module\customer\CustomerPicket;
 use my_module\supplier\SupplierModel;
-use my_module\supplier\SupplierPicket;
 
-require_once __DIR__ . '/TestBase.php';
+require_once __DIR__ . '/Base.php';
 
 /**
  * @author Patrick van Bergen
  */
-class MultipleInheritanceTest extends TestBase
+class MultipleInheritanceTest extends Base
 {
     public static function setUpBeforeClass()
     {
-        parent::setUpBeforeClass();
+        parent::initialize();
         parent::createCustomerType();
     }
 

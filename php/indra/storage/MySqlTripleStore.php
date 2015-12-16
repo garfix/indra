@@ -6,7 +6,7 @@ use indra\exception\DataBaseException;
 use indra\exception\ObjectCreationError;
 use indra\exception\ObjectNotFoundException;
 use indra\object\Attribute;
-use indra\object\Object;
+use indra\object\DomainObject;
 use indra\object\Type;
 use indra\service\Context;
 
@@ -178,7 +178,7 @@ class MySqlTripleStore implements TripleStore
 //        $revision = new Revision();
 //    }
 
-    public function save(Object $object, Revision $revision, Branch $branch)
+    public function save(DomainObject $object, Revision $revision, Branch $branch)
     {
         $revisionId = $revision->getId();
         $type = $object->getType();
@@ -221,7 +221,7 @@ class MySqlTripleStore implements TripleStore
         }
     }
 
-    public function load(Object $object, Branch $branch)
+    public function load(DomainObject $object, Branch $branch)
     {
         list($attributeValues, $typeFound) = $this->getAttributeValues($object, $branch);
 
@@ -236,7 +236,7 @@ class MySqlTripleStore implements TripleStore
         $object->setAttributeValues($attributeValues);
     }
 
-    public function remove(Object $object, Branch $branch)
+    public function remove(DomainObject $object, Branch $branch)
     {
         $db = Context::getDB();
 
@@ -379,7 +379,7 @@ class MySqlTripleStore implements TripleStore
         return $actions;
     }
 
-    private function getAttributeValues(Object $object, Branch $branch)
+    private function getAttributeValues(DomainObject $object, Branch $branch)
     {
         $db = Context::getDB();
 

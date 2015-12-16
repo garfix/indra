@@ -2,6 +2,8 @@
 
 namespace indra\object;
 
+use indra\storage\TableView;
+
 /**
  * @author Patrick van Bergen
  */
@@ -29,4 +31,9 @@ abstract class Type
     {
         return isset($this->attributes[$id]) ? $this->attributes[$id] : false;
     }
+
+    /**
+     * @return TableView
+     */
+    public abstract function getTableView();
 }

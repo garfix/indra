@@ -2,12 +2,12 @@
 
 namespace {{ namespace }};
 
-use indra\object\Object;
+use indra\object\DomainObject;
 
 /**
  * This class was auto-generated. Do not change it, for it will be overwritten.
  */
-class {{ className }} extends Object
+class {{ className }} extends DomainObject
 {
 {{ attributes }}
 }
