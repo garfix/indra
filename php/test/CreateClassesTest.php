@@ -17,8 +17,7 @@ class CreateTypeTest extends Base
 {
     public static function setUpBeforeClass()
     {
-        $tableCreator = new TableCreator();
-        $tableCreator->createBasicTables();
+        parent::initialize();
 
         @unlink(__DIR__ . '/my_module/product/Product.php');
         @unlink(__DIR__ . '/my_module/product/ProductModel.php');

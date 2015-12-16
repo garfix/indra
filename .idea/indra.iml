@@ -7,10 +7,22 @@
     <orderEntry type="module-library">
       <library name="PHP">
         <CLASSES>
+          <root url="file://$APPLICATION_HOME_DIR$/bin" />
           <root url="file:///usr/share/php" />
         </CLASSES>
         <SOURCES>
+          <root url="file://$APPLICATION_HOME_DIR$/bin" />
           <root url="file:///usr/share/php" />
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library name="PHARS">
+        <CLASSES>
+          <root url="phar://$APPLICATION_HOME_DIR$/bin/phpunit.phar/" />
+        </CLASSES>
+        <SOURCES>
+          <root url="phar://$APPLICATION_HOME_DIR$/bin/phpunit.phar/" />
         </SOURCES>
       </library>
     </orderEntry>

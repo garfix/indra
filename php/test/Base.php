@@ -19,21 +19,28 @@ class Base extends PHPUnit_Framework_TestCase
 {
     const REMOVE_GENERATED_CLASSES = true;
 
+    private static $initialized = false;
+
     public static function initialize()
     {
-        if (self::REMOVE_GENERATED_CLASSES) {
-            @unlink(__DIR__ . '/my_module/customer/Customer.php');
-            @unlink(__DIR__ . '/my_module/customer/CustomerModel.php');
-            @unlink(__DIR__ . '/my_module/customer/CustomerType.php');
-            @unlink(__DIR__ . '/my_module/customer/CustomerTable.php');
-            @unlink(__DIR__ . '/my_module/supplier/Supplier.php');
-            @unlink(__DIR__ . '/my_module/supplier/SupplierModel.php');
-            @unlink(__DIR__ . '/my_module/supplier/SupplierType.php');
-            @unlink(__DIR__ . '/my_module/supplier/SupplierTable.php');
-        }
+        if (!self::$initialized) {
 
-        $tableCreator = new TableCreator();
-        $tableCreator->createBasicTables();
+            if (self::REMOVE_GENERATED_CLASSES) {
+                @unlink(__DIR__ . '/my_module/customer/Customer.php');
+                @unlink(__DIR__ . '/my_module/customer/CustomerModel.php');
+                @unlink(__DIR__ . '/my_module/customer/CustomerType.php');
+                @unlink(__DIR__ . '/my_module/customer/CustomerTable.php');
+                @unlink(__DIR__ . '/my_module/supplier/Supplier.php');
+                @unlink(__DIR__ . '/my_module/supplier/SupplierModel.php');
+                @unlink(__DIR__ . '/my_module/supplier/SupplierType.php');
+                @unlink(__DIR__ . '/my_module/supplier/SupplierTable.php');
+            }
+
+            $tableCreator = new TableCreator();
+            $tableCreator->createBasicTables();
+
+            self::$initialized = true;
+        }
     }
 
     protected static function createCustomerType()
@@ -67,12 +74,5 @@ class Base extends PHPUnit_Framework_TestCase
     {
         $mysqli = Context::getMySqli();
         $mysqli->rollback();
-    }
-
-    public static function tearDownAfterClass()
-    {
-        $mysqli = Context::getMySqli();
-        $mysqli->close();
-        Context::setMySqli(null);
     }
 }
