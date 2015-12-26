@@ -18,21 +18,16 @@ class DomainObject
     /** @var mixed[] */
     protected $attributes = [];
 
-public $loadedAttributeValues = [];
+    /** @var mixed[]  */
+    public $originalAttributes = [];
 
-    public function __construct(Type $type, $id)
+    public function __construct(Type $type, $id, $attributes)
     {
         $this->type = $type;
         $this->id = $id;
+        $this->attributes = $attributes;
+        $this->originalAttributes = $attributes;
     }
-
-//    /**
-//     * @param string $id
-//     */
-//    public function setId($id)
-//    {
-//        $this->id = $id;
-//    }
 
     /**
      * @return string An indra identifier.
@@ -61,7 +56,6 @@ public $loadedAttributeValues = [];
     public function setAttributeValues($attributeValues)
     {
 #todo check!!!
-$this->loadedAttributeValues = $attributeValues;
         $this->attributes = $attributeValues;
     }
 }

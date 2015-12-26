@@ -5,6 +5,7 @@ namespace indra\storage;
 use Exception;
 use indra\exception\DataBaseException;
 use indra\object\DomainObject;
+use indra\object\Type;
 
 /**
  * @author Patrick van Bergen
@@ -18,10 +19,12 @@ interface TripleStore
     public function createBasicTables();
 
     /**
-     * @param Object|Object $object
+     * @param Type $type
+     * @param $objectId
      * @param Branch $branch
+     * @return
      */
-    public function load(DomainObject $object, Branch $branch);
+    public function loadAttributes(Type $type, $objectId, Branch $branch);
 
     /**
      * @param Object|Object $object

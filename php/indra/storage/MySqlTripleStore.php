@@ -213,17 +213,17 @@ class MySqlTripleStore implements TripleStore
 
                 if ($tripleId = $this->writeTriple($objectId, $attributeId, $attributeValues[$attributeId], $attribute->getDataType(), true, $branch)) {
 
-                    if (!isset($object->loadedAttributeValues[$attributeId]) || ($object->loadedAttributeValues[$attributeId] != $attributeValues[$attributeId])) {
+                    if (!isset($object->originalAttributes[$attributeId]) || ($object->originalAttributes[$attributeId] != $attributeValues[$attributeId])) {
                         $this->writeRevisionAction($revisionId, RevisionAction::ACTION_ACTIVATE, $tripleId);
                     }
-}
+                }
             }
         }
     }
 
-    public function load(DomainObject $object, Branch $branch)
+    public function loadAttributes(Type $type, $objectId, Branch $branch)
     {
-        list($attributeValues, $typeFound) = $this->getAttributeValues($object, $branch);
+        list($attributeValues, $typeFound) = $this->getAttributeValues($type, $objectId, $branch);
 
         if (!$typeFound) {
             throw new ObjectCreationError('No object of this type and id found.');
@@ -233,7 +233,7 @@ class MySqlTripleStore implements TripleStore
             throw new ObjectNotFoundException();
         }
 
-        $object->setAttributeValues($attributeValues);
+        return $attributeValues;
     }
 
     public function remove(DomainObject $object, Branch $branch)
@@ -379,12 +379,10 @@ class MySqlTripleStore implements TripleStore
         return $actions;
     }
 
-    private function getAttributeValues(DomainObject $object, Branch $branch)
+    private function getAttributeValues(Type $type, $objectId, Branch $branch)
     {
         $db = Context::getDB();
 
-        $type = $object->getType();
-        $objectId = $object->getId();
         $attributeValues = [];
         $branchToken = ($branch instanceof MasterBranch) ? '' : 'branch_';
         $branchClause = ($branch instanceof MasterBranch) ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
