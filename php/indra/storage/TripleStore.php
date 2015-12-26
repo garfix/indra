@@ -2,7 +2,6 @@
 
 namespace indra\storage;
 
-use Exception;
 use indra\exception\DataBaseException;
 use indra\object\DomainObject;
 use indra\object\Type;
@@ -27,7 +26,7 @@ interface TripleStore
     public function loadAttributes(Type $type, $objectId, Branch $branch);
 
     /**
-     * @param Object|Object $object
+     * @param DomainObject $object
      * @param Revision $revision
      * @param Branch $branch
      * @return
@@ -35,7 +34,7 @@ interface TripleStore
     public function save(DomainObject $object, Revision $revision, Branch $branch);
 
     /**
-     * @param Object|Object $object
+     * @param DomainObject $object
      * @param Branch $branch
      */
     public function remove(DomainObject $object, Branch $branch);
@@ -51,8 +50,10 @@ interface TripleStore
     /**
      * Perform $undoRevision to revert $revision.
      *
+     * @param Branch $branch
      * @param Revision $revision
      * @param Revision $undoRevision
+     * @return
      */
     public function revertRevision(Branch $branch, Revision $revision, Revision $undoRevision);
 

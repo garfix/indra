@@ -25,7 +25,8 @@ abstract class Type
     }
 
     /**
-     * @return Attribute|false
+     * @param string $id
+     * @return false|Attribute
      */
     public function getAttributeById($id)
     {

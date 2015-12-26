@@ -133,8 +133,8 @@ class DB
             while ($result = $resultSet->fetch_assoc()) {
                 return reset($result);
             }
-        } else {
-            throw new DataBaseException("MySQL error: " . mysqli_error(Context::getMySqli()));
         }
+
+        throw new DataBaseException("MySQL error: " . mysqli_error(Context::getMySqli()));
     }
 }

@@ -2,9 +2,6 @@
 
 namespace indra\storage;
 
-use indra\service\Context;
-use indra\object\DomainObject;
-
 /**
  * @author Patrick van Bergen
  */
@@ -21,7 +18,6 @@ class Revision
 
     public function __construct($id)
     {
-//        $this->description = $description;
         $this->id = $id;
     }
 

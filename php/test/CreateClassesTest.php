@@ -3,7 +3,6 @@
 use indra\definition\AttributeDefinition;
 use indra\definition\TypeDefinition;
 use indra\service\ClassCreator;
-use indra\service\TableCreator;
 use my_module\product\ProductPicket;
 use my_module\product\ProductType;
 use my_module\product\Product;

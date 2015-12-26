@@ -8,10 +8,8 @@ use indra\storage\DateTimeGenerator;
 use indra\storage\DB;
 use indra\storage\IdGenerator;
 use indra\storage\MySqlTripleStore;
-use indra\storage\MySqlViewStore;
 use indra\storage\RandomIdGenerator;
 use indra\storage\TripleStore;
-use indra\storage\ViewStore;
 use mysqli;
 
 /**

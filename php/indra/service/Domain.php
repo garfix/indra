@@ -19,14 +19,8 @@ class Domain
     /** @var  ViewStore */
     private $viewStore;
 
-//    /** @var  RevisionModel */
-//    private $RevisionModel;
-
     /** @var Branch */
     private $activeBranch = null;
-
-    /** @var  BranchModel */
-    private $BranchModel;
 
     /** @var  Revision */
     private $activeRevision = null;
@@ -34,7 +28,7 @@ class Domain
     /** @var bool  */
     private $useRevisions = false;
 
-    /** @var Object[] */
+    /** @var DomainObject[] */
     private $saveList = [];
 
     public static function loadFromIni()
@@ -157,6 +151,7 @@ class Domain
 
     /**
      * @param Branch $source
+     * @param Branch $target
      */
     public function mergeBranch(Branch $source, Branch $target)
     {
@@ -190,9 +185,6 @@ class Domain
 
             $branch1Source = $tripleStore->getSourceRevisionId($branch1RevisionId);
             $branch2Source = $tripleStore->getSourceRevisionId($branch2RevisionId);
-
-//var_dump($branch1Source);
-//var_dump($branch2Source);
 
             // common revision found!
             if (in_array($branch2Source, $branch1Revisions)) {

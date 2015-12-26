@@ -443,7 +443,8 @@ class MySqlTripleStore implements TripleStore
      * @param $attributeValue
      * @param $dataType
      * @param bool $active
-     * @return string|null Triple id If (object/attribute/value) already existed, return null; otherwise: the new triple id
+     * @param Branch $branch
+     * @return null|string Triple id If (object/attribute/value) already existed, return null; otherwise: the new triple id
      * @throws DataBaseException
      */
     private function writeTriple($objectId, $attributeId, $attributeValue, $dataType, $active, Branch $branch)
@@ -560,20 +561,9 @@ class MySqlTripleStore implements TripleStore
         $fromActiveness = $fromActive ? 'active_' : 'inactive_';
 
         $toBranchToken = ($toBranch instanceof MasterBranch) ? '' : 'branch_';
-        $toBranchClause = ($toBranch instanceof MasterBranch) ? "" : "`branch_id` = '" . $toBranch->getId() . "' AND\n";
         $toActiveness = $toActive ? 'active_' : 'inactive_';
 
         foreach ($this->getAllDataTypes() as $dataType) {
-
-
-//            $db->execute("
-//                INSERT INTO `indra_{$toBranchToken}active_" . $dataType . "` (`triple_id`, `object_id`, `attribute_id`, `value`)
-//                SELECT `triple_id`, `object_id`, `attribute_id`, `value`
-//                FROM `indra_{$fromBranchToken}inactive_" . $dataType . "`
-//                WHERE
-//                    {$fromBranchClause}
-//                    `triple_id` IN ('" . implode("', '", $tripleIds) . "')
-//            ");
 
             $db->execute("
                 INSERT ignore INTO `indra_{$toBranchToken}{$toActiveness}" . $dataType . "` (`triple_id`, `object_id`, `attribute_id`, `value`)
