@@ -64,6 +64,51 @@ class Attribute
         return $this;
     }
 
+    /**
+     * @return $this
+     */
+    public function setDataTypeTime()
+    {
+        $this->properties['dataType'] = self::TYPE_TIME;
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function setDataTypeDateTime()
+    {
+        $this->properties['dataType'] = self::TYPE_DATETIME;
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function setDataTypeInteger()
+    {
+        $this->properties['dataType'] = self::TYPE_INT;
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function setDataTypeLongText()
+    {
+        $this->properties['dataType'] = self::TYPE_LONGTEXT;
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function setDataTypeDouble()
+    {
+        $this->properties['dataType'] = self::TYPE_DOUBLE;
+        return $this;
+    }
+
     public function getDataType()
     {
         return $this->properties['dataType'];

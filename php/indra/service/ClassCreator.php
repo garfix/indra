@@ -4,6 +4,7 @@ namespace indra\service;
 
 use Exception;
 use indra\definition\TypeDefinition;
+use indra\exception\ClassCreationException;
 use ReflectionClass;
 
 /**
@@ -20,7 +21,7 @@ class ClassCreator
     {
         $reflector = new ReflectionClass($locatorClass);
         $locatorClassPath = dirname($reflector->getFileName());
-        $classId = Context::getIdGenerator()->generateId();
+        $typeId = Context::getIdGenerator()->generateId();
         $attributeTemplate = file_get_contents(__DIR__ . '/../template/Attribute.php.txt');
 
         $attributes = "";
@@ -66,13 +67,18 @@ class ClassCreator
 
             $path = $matches[1];
             $classNameBase = $matches[2];
+            $classPath = $locatorClassPath . '/' . $classNameBase . 'Type.php';
 
-            if (file_exists($locatorClassPath . '/' . $classNameBase . 'Type.php')) {
+            if (file_exists($classPath)) {
 
-                # do not overwrite the type file, because it contains generated identifiers
+                // reuse existing type id
+                $contents = file_get_contents($classPath);
 
-                return;
-
+                if (preg_match("/return '([a-zA-Z0-9]{22})'/", $contents, $matches)) {
+                    $typeId = $matches[1];
+                } else {
+                    throw ClassCreationException::getTypeIdNotFound();
+                }
             }
 
             foreach (['Type', 'Model', 'Table', ''] as $item) {
@@ -80,12 +86,12 @@ class ClassCreator
                 $template = file_get_contents(__DIR__ . '/../template/' . $fileName . '.php.txt');
 
                 $className = $classNameBase . $item;
-                $tableName = 'indra_view_' . $classId;
+                $tableName = 'indra_view_' . $typeId;
 
                 $replacements = [
                     '{{ namespace }}' => $path,
                     '{{ className }}' => $className,
-                    '{{ classId }}' => $classId,
+                    '{{ classId }}' => $typeId,
                     '{{ typeName }}' => $classNameBase,
                     '{{ attributes }}' => $attributes,
                     '{{ typeAttributes }}' => $typeAttributes,

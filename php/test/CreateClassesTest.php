@@ -40,4 +40,34 @@ class CreateTypeTest extends Base
 
         $this->assertEquals(true, $product instanceof Product);
     }
+
+    public function testRecreateClasses_shouldChangeFileButLeaveTypeIdUnchanged()
+    {
+        $classCreator = new ClassCreator();
+
+        $typeDefinition = new TypeDefinition();
+        $typeDefinition->addAttribute(AttributeDefinition::create('name')->setDataTypeVarchar());
+        $typeDefinition->addAttribute(AttributeDefinition::create('introductionDate')->setDataTypeDate());
+
+        $classCreator->createClasses(ProductPicket::class, $typeDefinition);
+
+        $Class = new ReflectionClass(ProductType::class);
+        $fileName = $Class->getFileName();
+        $contents1 = file_get_contents($fileName);
+        $Type = new ProductType();
+        $typeId = $Type->getId();
+
+        $typeDefinition->addAttribute(AttributeDefinition::create('price')->setDataTypeInteger());
+
+        $classCreator->createClasses(ProductPicket::class, $typeDefinition);
+
+        $contents2 = file_get_contents($fileName);
+
+        // check if the type id has changed
+        $this->assertEquals(1, preg_match('/' . $typeId . '/', $contents2));
+
+        // check if the attribute has been added
+        $this->assertTrue(strlen($contents1) < strlen($contents2));
+
+    }
 }
