@@ -16,8 +16,7 @@ class AttributeDefinition
      */
     public static function create($name)
     {
-        $attribute = new Attribute(Context::getIdGenerator()->generateId());
-        $attribute->setName($name);
+        $attribute = new Attribute(Context::getIdGenerator()->generateId(), $name);
         return $attribute;
     }
 }

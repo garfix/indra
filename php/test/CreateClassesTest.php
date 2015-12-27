@@ -55,6 +55,9 @@ class CreateTypeTest extends Base
         $contents1 = file_get_contents($fileName);
         $Type = new ProductType();
         $typeId = $Type->getId();
+        $attributes = $Type->getAttributes();
+        $firstAttribute = reset($attributes);
+        $firstAttributeId = $firstAttribute->getId();
 
         $typeDefinition->addAttribute(AttributeDefinition::create('price')->setDataTypeInteger());
 
@@ -64,6 +67,9 @@ class CreateTypeTest extends Base
 
         // check if the type id has changed
         $this->assertEquals(1, preg_match('/' . $typeId . '/', $contents2));
+
+        // check if the attribute id has changed
+        $this->assertEquals(1, preg_match('/' . $firstAttributeId . '/', $contents2));
 
         // check if the attribute has been added
         $this->assertTrue(strlen($contents1) < strlen($contents2));

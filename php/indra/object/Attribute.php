@@ -22,24 +22,15 @@ class Attribute
         'dataType' => self::TYPE_VARCHAR,
     ];
 
-    public function __construct($id)
+    public function __construct($id, $name)
     {
         $this->id = $id;
+        $this->properties['name'] = $name;
     }
 
     public function getId()
     {
         return $this->id;
-    }
-
-    /**
-     * @param string $name
-     * @return $this
-     */
-    public function setName($name)
-    {
-        $this->properties['name'] = $name;
-        return $this;
     }
 
     public function getName()

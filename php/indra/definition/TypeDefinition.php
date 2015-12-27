@@ -19,7 +19,7 @@ class TypeDefinition
      */
     public function addAttribute(Attribute $attribute)
     {
-        $this->attributes[$attribute->getId()] = $attribute;
+        $this->attributes[] = $attribute;
     }
 
     /**
