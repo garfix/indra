@@ -1,4 +1,7 @@
-# branching en merging
+# Branching
+
+One of Indra's main features is its ability to create different branches of stored data, comparable to that of a version control system for source code.
+
 
 - tabel indra_branch (branch_id, source_id, user_id, time)
 - oh, ja nieuwe tabel voor indra gebruikers: indra_user(user_id, extra_id, name) // extra_id koppelt de gebruiker aan een ander pakket

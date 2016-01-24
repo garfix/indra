@@ -9,20 +9,27 @@ use indra\service\Context;
  */
 class Branch
 {
+    const MASTER = 'master----------------';
+
     /** @var  string */
     protected $id;
 
     /** @var  Revision */
     protected $activeRevision = null;
 
-    public function __construct()
+    public function __construct($id)
     {
-        $this->id = Context::getIdGenerator()->generateId();
+        $this->id = $id;
     }
 
     public function getId()
     {
         return $this->id;
+    }
+
+    public function isMaster()
+    {
+        return $this->id == self::MASTER;
     }
 
     /**

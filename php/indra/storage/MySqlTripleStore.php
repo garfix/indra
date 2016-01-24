@@ -165,18 +165,27 @@ class MySqlTripleStore implements TripleStore
         ");
     }
 
-//    public function loadBranch($branchId)
-//    {
-//        $db = Context::getDB();
-//
-//        $db->querySingleRow("
-//            SELECT `revision_id`
-//            FROM `indra_branch`
-//            WHERE `branch_id` = '" . $branchId . "'
-//        ");
-//
-//        $revision = new Revision();
-//    }
+    public function loadBranch($branchId)
+    {
+        $db = Context::getDB();
+
+        $branch = new Branch($branchId);
+
+        $revisionId = $db->querySingleCell("
+            SELECT `revision_id`
+            FROM `indra_branch`
+            WHERE `branch_id` = '" . $branchId . "'
+        ");
+
+        if ($revisionId) {
+            $revision = new Revision($revisionId);
+        } else {
+            $revision = new BaseRevision();
+        }
+        $branch->setActiveRevision($revision);
+
+        return $branch;
+    }
 
     public function save(DomainObject $object, Revision $revision, Branch $branch)
     {
@@ -342,8 +351,8 @@ class MySqlTripleStore implements TripleStore
 
     private function getTripleData($objectId, $attributeId, $dataType, Branch $branch)
     {
-        $branchToken = ($branch instanceof MasterBranch) ? '' : 'branch_';
-        $branchClause = ($branch instanceof MasterBranch) ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
+        $branchToken = $branch->isMaster() ? '' : 'branch_';
+        $branchClause = $branch->isMaster() ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
 
         return Context::getDB()->querySingleRow("
             SELECT `triple_id`, `value`
@@ -384,8 +393,8 @@ class MySqlTripleStore implements TripleStore
         $db = Context::getDB();
 
         $attributeValues = [];
-        $branchToken = ($branch instanceof MasterBranch) ? '' : 'branch_';
-        $branchClause = ($branch instanceof MasterBranch) ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
+        $branchToken = ($branch->isMaster()) ? '' : 'branch_';
+        $branchClause = ($branch->isMaster()) ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
         $typeFound = false;
 
         foreach ($this->getDataTypesOfType($type) as $dataType) {
@@ -453,8 +462,8 @@ class MySqlTripleStore implements TripleStore
 
         $activeness = $active ? 'active' : 'inactive';
 
-        $branchToken = ($branch instanceof MasterBranch) ? '' : 'branch_';
-        $branchClause = ($branch instanceof MasterBranch) ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
+        $branchToken = $branch->isMaster() ? '' : 'branch_';
+        $branchClause = $branch->isMaster() ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
 
         $exists = $db->querySingleCell("
                     SELECT COUNT(*)
@@ -468,7 +477,7 @@ class MySqlTripleStore implements TripleStore
 
         if (!$exists) {
 
-            $branchClause = ($branch instanceof MasterBranch) ? "" : "`branch_id` = '" . $branch->getId() . "',\n";
+            $branchClause = $branch->isMaster() ? "" : "`branch_id` = '" . $branch->getId() . "',\n";
 
             $tripleId = Context::getIdGenerator()->generateId();
 
@@ -492,8 +501,8 @@ class MySqlTripleStore implements TripleStore
     {
         $db = Context::getDB();
 
-        $branchToken = ($branch instanceof MasterBranch) ? '' : 'branch_';
-        $branchClause = ($branch instanceof MasterBranch) ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
+        $branchToken = $branch->isMaster() ? '' : 'branch_';
+        $branchClause = $branch ->isMaster() ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
 
         $db->execute("
                     INSERT INTO indra_{$branchToken}inactive_" . $dataType . "
@@ -556,11 +565,11 @@ class MySqlTripleStore implements TripleStore
             return;
         }
 
-        $fromBranchToken = ($fromBranch instanceof MasterBranch) ? '' : 'branch_';
-        $fromBranchClause = ($fromBranch instanceof MasterBranch) ? "" : "`branch_id` = '" . $fromBranch->getId() . "' AND\n";
+        $fromBranchToken = $fromBranch->isMaster() ? '' : 'branch_';
+        $fromBranchClause = $fromBranch->isMaster() ? "" : "`branch_id` = '" . $fromBranch->getId() . "' AND\n";
         $fromActiveness = $fromActive ? 'active_' : 'inactive_';
 
-        $toBranchToken = ($toBranch instanceof MasterBranch) ? '' : 'branch_';
+        $toBranchToken = $toBranch->isMaster() ? '' : 'branch_';
         $toActiveness = $toActive ? 'active_' : 'inactive_';
 
         foreach ($this->getAllDataTypes() as $dataType) {

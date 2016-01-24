@@ -1,8 +1,6 @@
 <?php
 
 use indra\service\Domain;
-use indra\storage\BaseRevision;
-use indra\storage\MasterBranch;
 use my_module\customer\CustomerModel;
 
 require_once __DIR__ . '/Base.php';
@@ -20,11 +18,10 @@ class MergeBranchesTest extends Base
 
     public function testMerge()
     {
-        $master = new MasterBranch();
-        $master->setActiveRevision(new BaseRevision());
-
         $domain = Domain::loadFromSettings(true);
         $customerModel = new CustomerModel($domain);
+
+        // create customer in default branch (master)
 
         $customer = $customerModel->createCustomer();
         $customerId = $customer->getId();
@@ -43,6 +40,8 @@ $customer = $customerModel->loadCustomer($customerId);
         $customerModel->saveCustomer($customer);
         $domain->commit('Change customer name to Dr. Who');
 
+        $master = $domain->getMasterBranch();
+
         // change in master branch
         $domain->startBranch($master);
         $customer = $customerModel->loadCustomer($customerId);
@@ -51,7 +50,6 @@ $customer = $customerModel->loadCustomer($customerId);
         $domain->commit('Change birth date to 1971-09-23');
 
         // test that the two objects have separated
-        $domain->startBranch($master);
         $customer2 = $customerModel->loadCustomer($customerId);
         $this->assertEquals('Dr. Jones', $customer2->getName());
         $this->assertEquals('1971-09-23', $customer2->getBirthDate());

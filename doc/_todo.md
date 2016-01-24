@@ -1,5 +1,7 @@
 # Possible future features
 
+De verschillende verantwoordelijkheden van Domain opsplitsen. Denk na of het mogelijk is te veranderen van configuratie. Zo niet, dan moet je dat afdwingen in de code.
+
 - object-georienteerde revisies
 - multilingual
 - sets

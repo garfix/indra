@@ -3,6 +3,7 @@
 use indra\definition\AttributeDefinition;
 use indra\definition\TypeDefinition;
 use indra\service\ClassCreator;
+use indra\service\Context;
 use my_module\product\ProductPicket;
 use my_module\product\ProductType;
 use my_module\product\Product;
@@ -35,7 +36,7 @@ class CreateTypeTest extends Base
 
         // test if customer class has been created
         // NB: it is correct that this class does not exist at compile time. That's exactly the point :)
-        $product = new Product(new ProductType(), \indra\service\Context::getIdGenerator()->generateId(), []);
+        $product = new Product(new ProductType(), Context::getIdGenerator()->generateId(), []);
 
         $this->assertEquals(true, $product instanceof Product);
     }
@@ -47,7 +48,6 @@ class CreateTypeTest extends Base
         $typeDefinition = new TypeDefinition();
         $typeDefinition->addAttribute(AttributeDefinition::create('name')->setDataTypeVarchar());
         $typeDefinition->addAttribute(AttributeDefinition::create('introductionDate')->setDataTypeDate());
-
         $classCreator->createClasses(ProductPicket::class, $typeDefinition);
 
         $Class = new ReflectionClass(ProductType::class);

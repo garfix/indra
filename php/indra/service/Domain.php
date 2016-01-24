@@ -73,7 +73,7 @@ class Domain
      */
     public function startNewBranch()
     {
-        $this->activeBranch = new Branch();
+        $this->activeBranch = new Branch(Context::getIdGenerator()->generateId());
 
         return $this->activeBranch;
     }
@@ -86,12 +86,19 @@ class Domain
         $this->activeBranch = $branch;
     }
 
+    public function getMasterBranch()
+    {
+        $tripleStore = Context::getTripleStore();
+
+        return $tripleStore->loadBranch(Branch::MASTER);
+    }
+
     /**
-     * @return MasterBranch
+     * @return Branch
      */
     public function getActiveBranch()
     {
-        return $this->activeBranch ?: $this->activeBranch = new MasterBranch();
+        return $this->activeBranch ?: $this->activeBranch = $this->getMasterBranch();
     }
 
     public function addToSaveList(DomainObject $Object)
