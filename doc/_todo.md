@@ -29,3 +29,7 @@ De verschillende verantwoordelijkheden van Domain opsplitsen. Denk na of het mog
 - queryen in de historie / Bv. geef me alle objecten van dit type die zijn verandert sinds datum D 
 - is het mogelijk actieve triples helemaal niet meer op te slaan en alleen te werken met de views?
 - aan het einde van de merge: verplaats de pointer van de branch naar de nieuwe revisie (beide branches hebben dezelfde revisie)
+- geef mij (bepaalde waarden van) alle objecten die verandert cq verwijderd zijn sinds 1 okt.
+    => gebruik een last-modified attribuut. als je de verwijderde objecten wilt hebben kun je die loggen via een event plugin
+- streef naar een zo klein mogelijke database, gegeven de eisen van de features
+
