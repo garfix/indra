@@ -4,11 +4,11 @@ The goal of this system is be a data store with these main features:
  
  - easy to use ORM with types, attributes, and objects
  - uses and integrates with an existing relational database 
- - class generation
- - attributes may be part of multiple types
- - each set of change forms a commit in a branch
+ - class generation for types and attributes
+ - one attribute may be part of more than one type
+ - each set of changes forms a commit in a branch
  - branches may be created and merged
- - an application can be told to use data at a previous point in history (any previous commit)
+ - an application may use the data of a previous point in history (any previous commit)
  - data is stored both as views (full tables) and as diffs (commits)
  - a commit may be reverted (made undone) if no later commits depend on it
  - the commit-history of an object, a type, and a user can be inspected     
@@ -19,39 +19,44 @@ The goal of this system is be a data store with these main features:
 
 A thread of commits, of which only the last one is saved.
 
-- head-commit-id // the last commit of this branch
+- branch-id (string) // indra-id
+- head-commit-id (string) // indra-id / index
+- mother-commit-id (string) // indra-id / index
+
+The mother-commit-id is the commit from which this branch has sprung.
 
 ### Commit
 
 A commit is a set of changes committed to the database.
-A commit may be part of multiple branches. 
 
- - commit-id (string)
+ - commit-id (string) // indra-id / index
  - reason
  - username (string)
  - datetime
- 
-The commit-id is a numeric string that indicates the follow number inside the branch, and the mother branch.
-I.e. 2.3: commit 3 of current branch, mother branch is 2 
+ - merge-commit-id // indra-id / index
 
+The merge-commit-id is only filled when a the commit is created from the merge of another branch.
+  It is used to when the same branche is merged again. All commits before this merge-commit-id are not merged again. 
+  
 ### Commit object
 
 An index into the commits, to find all objects of a given type that have changed in some span. 
 
- - commit-id
+ - branch-id
+ - branch-commit-index
  - object-id
  - type-id
  - diff (longtext) 
  
 The diff is an encoded structure of multiple changes. Examples:
  
- Change of attribute:
+ - Change of attribute:
  
-  +last-modified=1/1/2015;-last-modified=1/1/2014
+ADD ATTRIBUTE last-modified, 1/1/2015; REMOVE ATTRIBUTE last-modified, 1/1/2014
   
- Change of type:
+ - Change of type:
   
-  +column=color
+ADD COLUMN color
 
 ### View
 
@@ -71,7 +76,7 @@ Table name: view-{view-id}
 A snapshot is a view that is linked to a commit
 
  - view-id
- - commit-d
+ - commit-id
 
 ### Branch view
 
@@ -87,7 +92,7 @@ If a branch view matches a snapshot, that's incidental. Snapshot and branches ar
 
  - Create a commit
  - Create commit objects
- - Change the commit-id of the branch to the new commit
+ - Change the head-commit-id of the branch to the new commit
  - Is the branch-view used by other branches as well?
     - Yes: Create a clone of the active view, update this clone and update the branch-view
     - No: Update the view-table of the branch view with the new commit
@@ -107,7 +112,9 @@ If a branch view matches a snapshot, that's incidental. Snapshot and branches ar
 A merge from branch A to branch B goes as follows:
 
  - the common ancestor commit is found
+    - find the common mother-branch and the oldest index of this branch that needs merging
  - all commits in between this common commit and the last commit of A are applied in a single commit to branch B
+ - commits from A before a merge-commit-id in B are discarded
  
 ### Undo a commit
 
@@ -118,7 +125,17 @@ An undo of a commit is qua data just a new commit.
 When a specific commit is checked out by a request, in fact a single snapshot is requested.
 
  - Does this snapshot exist?
-    - No: created the view-table and the snapshot
+    - No: 
+        - created the view-table and the snapshot
+        - apply all commit diffs that affect the type up until the requested commit are applied to the snapshot in reverse, 
+          including table changes.
+          
+          For example: if the requested commit C is part of branch B, and looks like this: 103.88, then
+          all commits 103.89, 103.90, 103.91, ... whose type-id matches that of the requested type
+          are collected and applied to the snapshot
+          
     - Yes: no action
-
     
+Use the snapshot.
+
+Snapshots may be removed with a single API call.
