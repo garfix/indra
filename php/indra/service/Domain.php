@@ -5,7 +5,6 @@ namespace indra\service;
 use indra\object\DomainObject;
 use indra\storage\BaseRevision;
 use indra\storage\Branch;
-use indra\storage\MasterBranch;
 use indra\storage\MySqlViewStore;
 use indra\storage\Revision;
 use indra\storage\ViewStore;
@@ -25,32 +24,8 @@ class Domain
     /** @var  Revision */
     private $activeRevision = null;
 
-    /** @var bool  */
-    private $useRevisions = false;
-
     /** @var DomainObject[] */
     private $saveList = [];
-
-    public static function loadFromIni()
-    {
-#todo: load from ini
-        return new Domain();
-    }
-
-    public static function loadFromSettings($useRevisions = false)
-    {
-        return new Domain($useRevisions);
-    }
-
-    public function __construct($useRevisions = false)
-    {
-        $this->useRevisions = $useRevisions;
-    }
-
-    public function usesRevisions()
-    {
-        return $this->useRevisions;
-    }
 
     /**
      * @param ViewStore $viewStore

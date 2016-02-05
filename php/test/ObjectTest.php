@@ -18,7 +18,7 @@ class CreateObjectTest extends Base
 
     public function testCreateObject()
     {
-        $domain = Domain::loadFromIni();
+        $domain = new Domain();
         $model = new CustomerModel($domain);
 
         $customer = $model->createCustomer();
@@ -26,6 +26,7 @@ class CreateObjectTest extends Base
 
         $customer->setName('Dr. Jones');
         $model->saveCustomer($customer);
+        $domain->commit('Add customer Dr. Jones');
         $id = $customer->getId();
 
         $customer2 = $model->loadCustomer($id);
@@ -35,17 +36,19 @@ class CreateObjectTest extends Base
 
     public function testUpdateObject()
     {
-        $domain = Domain::loadFromIni();
+        $domain = new Domain();
         $model = new CustomerModel($domain);
 
         $customer = $model->createCustomer();
         $customer->setName('Dr. Jones');
         $model->saveCustomer($customer);
+        $domain->commit('Add customer Dr. Jones');
         $id = $customer->getId();
 
         $customer2 = $model->loadCustomer($id);
         $customer2->setName('Dr. Livingstone');
         $model->saveCustomer($customer2);
+        $domain->commit('Add customer Dr. Livingstone');
 
         $customer3 = $model->loadCustomer($id);
         $name = $customer3->getName();
@@ -54,12 +57,13 @@ class CreateObjectTest extends Base
 
     public function testRemoveObject()
     {
-        $domain = Domain::loadFromIni();
+        $domain = new Domain();
         $model = new CustomerModel($domain);
 
         $customer = $model->createCustomer();
         $customer->setName('Dr. Jones');
         $model->saveCustomer($customer);
+        $domain->commit('Add customer Dr. Jones');
         $id = $customer->getId();
 
         $model->removeCustomer($customer);

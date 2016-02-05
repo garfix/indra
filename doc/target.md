@@ -20,8 +20,9 @@ The goal of this system is be a data store with these main features:
 A thread of commits, of which only the last one is saved.
 
 - branch-id (string) // indra-id
-- head-commit-id (string) // indra-id / index
-- mother-commit-id (string) // indra-id / index
+- commit-index (int)
+- mother-branch-id (string) // indra-id
+- mother-commit-index (int)
 
 The mother-commit-id is the commit from which this branch has sprung.
 
@@ -29,22 +30,23 @@ The mother-commit-id is the commit from which this branch has sprung.
 
 A commit is a set of changes committed to the database.
 
- - commit-id (string) // indra-id / index
+ - branch-id (string) // indra-id
+ - commit-index (int) 
  - reason
  - username (string)
  - datetime
- - merge-commit-id // indra-id / index
+ - merge-branch-id // indra-id
+ - merge-commit-index (int)
 
 The merge-commit-id is only filled when a the commit is created from the merge of another branch.
   It is used to when the same branche is merged again. All commits before this merge-commit-id are not merged again. 
   
-### Commit object
+### Commit per type
 
 An index into the commits, to find all objects of a given type that have changed in some span. 
 
  - branch-id
  - branch-commit-index
- - object-id
  - type-id
  - diff (longtext) 
  
@@ -62,9 +64,6 @@ ADD COLUMN color
 
 A view is a flat representation of all objects of a type.
 
- - view-id
- - type-id
-
 ### View table
 
 Table name: view-{view-id}
@@ -76,7 +75,8 @@ Table name: view-{view-id}
 A snapshot is a view that is linked to a commit
 
  - view-id
- - commit-id
+ - branch-id
+ - commit-index
 
 ### Branch view
 

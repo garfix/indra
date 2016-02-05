@@ -20,12 +20,13 @@ class ViewTest extends Base
 
     public function testCreateView()
     {
-        $domain = Domain::loadFromIni();
+        $domain = new Domain();
         $model = new CustomerModel($domain);
 
         $customer = $model->createCustomer();
         $customer->setName('Dr. Jones');
         $model->saveCustomer($customer);
+        $domain->commit('Add customer Dr. Jones');
 
         // check if table (view) exists and if one row has been added
         $rows = Context::getDB()->queryMultipleRows("

@@ -18,7 +18,7 @@ class RevisionTest extends Base
 
     public function testUndo()
     {
-        $domain = Domain::loadFromSettings(true);
+        $domain = new Domain();
         $customerModel = new CustomerModel($domain);
 
         $customer = $customerModel->createCustomer();

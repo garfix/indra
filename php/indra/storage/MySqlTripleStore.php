@@ -123,10 +123,64 @@ class MySqlTripleStore implements TripleStore
         ");
 
         $db->execute("
-            CREATE TABLE IF NOT EXISTS indra_branch (
+            CREATE TABLE IF NOT EXISTS indra_old_branch (
 					`branch_id`				    binary(22) not null,
 					`revision_id` 		        binary(22) not null,
 					primary key (`branch_id`)
+            ) engine InnoDB
+        ");
+
+//$db->execute("
+//    DROP TABLE indra_commit_object
+//");
+
+        $db->execute("
+            CREATE TABLE IF NOT EXISTS indra_branch (
+					`branch_id`				    binary(22) not null,
+					`commit_index`              int not null,
+					`mother_branch_id`	        binary(22) not null,
+					`mother_commit_index`       int default null,
+					primary key (`branch_id`)
+            ) engine InnoDB
+        ");
+
+        $db->execute("
+            CREATE TABLE IF NOT EXISTS indra_commit (
+					`branch_id`				    binary(22) not null,
+					`commit_index`              int not null,
+					`reason`	                varchar(255),
+					`username`	                varchar(255),
+					`datetime`                  datetime,
+					`merge_branch_id`			binary(22) default null,
+					`merge_commit_index`        int default null,
+					primary key (`branch_id`, `commit_index`)
+            ) engine InnoDB
+        ");
+
+        $db->execute("
+            CREATE TABLE IF NOT EXISTS indra_commit_type (
+					`branch_id`				    binary(22) not null,
+					`type_id`	                binary(22) not null,
+					`commit_index`              int not null,
+					`diff`                      longtext,
+					primary key (`branch_id`, `type_id`, `commit_index`)
+            ) engine InnoDB
+        ");
+
+        $db->execute("
+            CREATE TABLE IF NOT EXISTS indra_branch_view (
+					`branch_id`				    binary(22) not null,
+					`view_id`	                binary(22) not null,
+					primary key (`branch_id`)
+            ) engine InnoDB
+        ");
+
+        $db->execute("
+            CREATE TABLE IF NOT EXISTS indra_snapshot (
+					`branch_id`				    binary(22) not null,
+					`commit_index`			    int not null,
+					`view_id`	                binary(22) not null,
+					primary key (`branch_id`, `commit_index`)
             ) engine InnoDB
         ");
     }
@@ -156,7 +210,7 @@ class MySqlTripleStore implements TripleStore
         $revisionId = $branch->getActiveRevision()->getId();
 
         $db->execute("
-            INSERT INTO `indra_branch`
+            INSERT INTO `indra_old_branch`
                 SET
                       `branch_id` = '" . $branch->getId() . "',
                       `revision_id` = '" . $revisionId . "'
@@ -173,7 +227,7 @@ class MySqlTripleStore implements TripleStore
 
         $revisionId = $db->querySingleCell("
             SELECT `revision_id`
-            FROM `indra_branch`
+            FROM `indra_old_branch`
             WHERE `branch_id` = '" . $branchId . "'
         ");
 

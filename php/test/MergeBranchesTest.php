@@ -18,7 +18,7 @@ class MergeBranchesTest extends Base
 
     public function testMerge()
     {
-        $domain = Domain::loadFromSettings(true);
+        $domain = new Domain();
         $customerModel = new CustomerModel($domain);
 
         // create customer in default branch (master)
@@ -33,9 +33,9 @@ class MergeBranchesTest extends Base
         // start new branch and change customer
 $customer = $customerModel->loadCustomer($customerId);
         $branch = $domain->startNewBranch();
+        #todo: set current rev to basic rev
 
-#todo: dit moet ook werken
-//        $customer = $customerModel->loadCustomer($customerId);
+#        $customer = $customerModel->loadCustomer($customerId);
         $customer->setName('Dr. Who');
         $customerModel->saveCustomer($customer);
         $domain->commit('Change customer name to Dr. Who');

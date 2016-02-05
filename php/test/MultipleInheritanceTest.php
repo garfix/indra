@@ -19,11 +19,12 @@ class MultipleInheritanceTest extends Base
 
     public function testMultipleTypes()
     {
-        $domain = Domain::loadFromSettings(false);
+        $domain = new Domain();
         $customerModel = new CustomerModel($domain);
         $customer1 = $customerModel->createCustomer();
         $customer1->setName('Ms. Buyalot');
         $customerModel->saveCustomer($customer1);
+        $domain->commit('Add customer Ms. Buyalot');
 
         $objectId = $customer1->getId();
 
@@ -31,6 +32,7 @@ class MultipleInheritanceTest extends Base
         $supplier1 = $supplierModel->createSupplierFrom($customer1);
         $supplier1->setName('Mr. Musthave');
         $supplierModel->saveSupplier($supplier1);
+        $domain->commit('Add supplier Mr. Musthave');
 
         // test that customer1 is now both customer and supplier, and these share the same name
 

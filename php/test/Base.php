@@ -45,7 +45,7 @@ class Base extends PHPUnit_Framework_TestCase
 
     protected static function createCustomerType()
     {
-        $domain = Domain::loadFromIni();
+        $domain = new Domain();
         $typeModel = new TypeModel($domain);
         $name = AttributeDefinition::create('name')->setDataTypeVarchar();
 

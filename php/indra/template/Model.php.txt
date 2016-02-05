@@ -31,15 +31,7 @@ class {{ className }} extends Model
 
     public function save{{ typeName }}({{ typeName }} $object)
     {
-        $branch = $this->domain->getActiveBranch();
-
-        if ($this->domain->usesRevisions()) {
-            $this->domain->addToSaveList($object);
-        } else {
-            $revision = $this->domain->getActiveRevision();
-            Context::getTripleStore()->save($object, $revision, $branch);
-            $this->domain->getViewStore()->updateView($object);
-        }
+        $this->domain->addToSaveList($object);
     }
 
     public function load{{ typeName }}($objectId)

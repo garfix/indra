@@ -2,8 +2,6 @@
 
 namespace indra\storage;
 
-use indra\service\Context;
-
 /**
  * @author Patrick van Bergen
  */
