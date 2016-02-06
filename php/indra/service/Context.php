@@ -10,6 +10,7 @@ use indra\storage\IdGenerator;
 use indra\storage\MySqlTripleStore;
 use indra\storage\RandomIdGenerator;
 use indra\storage\TripleStore;
+use indra\storage\UserNameProvider;
 use mysqli;
 
 /**
@@ -39,6 +40,8 @@ class Context
     /** @var  DateTimeGenerator */
     private static $dateTimeGenerator;
 
+    private static $userNameProvider;
+
     /**
      * Removes all services. After this, if a new service is requested, it will be created anew.
      */
@@ -49,6 +52,7 @@ class Context
         self::$idGenerator = null;
         self::$dateTimeGenerator = null;
         self::$db = null;
+        self::$userNameProvider = null;
     }
 
     /**
@@ -83,6 +87,22 @@ class Context
         return self::$dateTimeGenerator ?: self::$dateTimeGenerator = new DateTimeGenerator();
     }
 
+    /**
+     * @param UserNameProvider $userNameProvider
+     */
+    public static function setUserNameProvider(UserNameProvider $userNameProvider)
+    {
+        self::$userNameProvider = $userNameProvider;
+    }
+
+    /**
+     * @return UserNameProvider
+     */
+    public static function getUserNameProvider()
+    {
+        return self::$userNameProvider ?: self::$userNameProvider = new UserNameProvider();
+    }
+    
     /**
      * @param mysqli $mysqli
      */

@@ -91,7 +91,7 @@ If a branch view matches a snapshot, that's incidental. Snapshot and branches ar
 ### A new commit
 
  - Create a commit
- - Create commit objects
+ - Create commit types
  - Change the head-commit-id of the branch to the new commit
  - Is the branch-view used by other branches as well?
     - Yes: Create a clone of the active view, update this clone and update the branch-view

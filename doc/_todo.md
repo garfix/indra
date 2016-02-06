@@ -32,4 +32,4 @@ De verschillende verantwoordelijkheden van Domain opsplitsen. Denk na of het mog
 - geef mij (bepaalde waarden van) alle objecten die verandert cq verwijderd zijn sinds 1 okt.
     => gebruik een last-modified attribuut. als je de verwijderde objecten wilt hebben kun je die loggen via een event plugin
 - streef naar een zo klein mogelijke database, gegeven de eisen van de features
-
+- is het mogelijk om de code-generatie te schedulen: om 2:00 's-nachts worden de nieuwe tabellen gemaakt

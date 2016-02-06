@@ -5,6 +5,7 @@ namespace indra\service;
 use indra\object\DomainObject;
 use indra\storage\BaseRevision;
 use indra\storage\Branch;
+use indra\storage\Commit;
 use indra\storage\MySqlViewStore;
 use indra\storage\Revision;
 use indra\storage\ViewStore;
@@ -46,9 +47,9 @@ class Domain
     /**
      * @return Branch
      */
-    public function startNewBranch()
+    public function startNewBranch(Commit $motherCommit)
     {
-        $this->activeBranch = new Branch(Context::getIdGenerator()->generateId());
+        $this->activeBranch = new Branch(Context::getIdGenerator()->generateId(), $motherCommit->getBranchId(), $motherCommit->getCommitIndex());
 
         return $this->activeBranch;
     }
@@ -65,7 +66,14 @@ class Domain
     {
         $tripleStore = Context::getTripleStore();
 
-        return $tripleStore->loadBranch(Branch::MASTER);
+        $branch = $tripleStore->loadBranch(Branch::MASTER);
+
+        if (!$branch) {
+            $branch = new Branch(Branch::MASTER, null, null);
+            $branch->setActiveRevision(new BaseRevision());
+        }
+
+        return $branch;
     }
 
     /**
@@ -105,12 +113,22 @@ class Domain
         $tripleStore = Context::getTripleStore();
         $branch = $this->getActiveBranch();
 
+        $branch->increaseCommitIndex();
+
         $revision = new Revision(Context::getIdGenerator()->generateId());
         $revision->setSourceRevision($this->getActiveRevision());
         $revision->setDescription($commitDescription);
 
         // store the revision
         $tripleStore->storeRevision($revision);
+
+        $dateTime = Context::getDateTimeGenerator()->getDateTime();
+        $userName = Context::getUserNameProvider()->getUserName();
+
+        $commit = new Commit($branch->getBranchId(), $branch->getCommitIndex(), $commitDescription, $userName, $dateTime->format('Y-m-d H:i:s'));
+
+        // store the commit
+        $tripleStore->storeCommit($commit);
 
         // link current branch to new revision
         $branch->setActiveRevision($revision);
@@ -128,7 +146,8 @@ class Domain
 
         $this->activeRevision = $revision;
 
-        return $revision;
+#todo only commit
+        return [$revision, $commit];
     }
 
     /**

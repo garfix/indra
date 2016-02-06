@@ -45,6 +45,12 @@ interface TripleStore
      */
     public function storeRevision(Revision $revision);
 
+    /**
+     * @param Commit $commit
+     * @throws DataBaseException
+     */
+    public function storeCommit(Commit $commit);
+
     public function getSourceRevisionId($revisionId);
 
     /**

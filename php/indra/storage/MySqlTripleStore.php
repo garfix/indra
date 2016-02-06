@@ -122,24 +122,26 @@ class MySqlTripleStore implements TripleStore
             ) engine InnoDB
         ");
 
-        $db->execute("
-            CREATE TABLE IF NOT EXISTS indra_old_branch (
-					`branch_id`				    binary(22) not null,
-					`revision_id` 		        binary(22) not null,
-					primary key (`branch_id`)
-            ) engine InnoDB
-        ");
+//        $db->execute("
+//            CREATE TABLE IF NOT EXISTS indra_old_branch (
+//					`branch_id`				    binary(22) not null,
+//					`revision_id` 		        binary(22) not null,
+//					primary key (`branch_id`)
+//            ) engine InnoDB
+//        ");
 
 //$db->execute("
-//    DROP TABLE indra_commit_object
+//    DROP TABLE indra_branch
 //");
 
+#todo: remove revision_id
         $db->execute("
             CREATE TABLE IF NOT EXISTS indra_branch (
 					`branch_id`				    binary(22) not null,
+`revision_id` binary(22) not null,
 					`commit_index`              int not null,
-					`mother_branch_id`	        binary(22) not null,
-					`mother_commit_index`       int default null,
+					`mother_branch_id`	        binary(22),
+					`mother_commit_index`       int,
 					primary key (`branch_id`)
             ) engine InnoDB
         ");
@@ -203,17 +205,46 @@ class MySqlTripleStore implements TripleStore
                   `revision_datetime` = '" . $dateTime->format('Y-m-d H:i:s') . "'
         ");
     }
+    /**
+     * @param Commit $commit
+     * @throws DataBaseException
+     */
+    public function storeCommit(Commit $commit)
+    {
+        $db = Context::getDB();
+
+        $db->execute("
+            INSERT INTO `indra_commit`
+              SET
+                  `branch_id` = '" . $commit->getBranchId() . "',
+                  `commit_index` = '" . $commit->getCommitIndex() . "',
+                  `reason` = '" . $commit->getReason() . "',
+                  `username` = '" . $commit->getUserName() . "',
+                  `datetime` = '" . $commit->getDateTime() . "',
+                  `merge_branch_id` = '" . $commit->getMergeBranchId() . "',
+                  `merge_commit_index` = '" . $commit->getMergeCommitIndex() . "'
+        ");
+
+        // $branchId, $commitIndex, $description, $userName, $dateTime, $mergeBranchId = null, $mergeBranchIndex = null
+    }
 
     public function saveBranch(Branch $branch)
     {
         $db = Context::getDB();
         $revisionId = $branch->getActiveRevision()->getId();
+        $motherBranchId = $branch->getMotherBranchId();
+        $motherCommitIndex = $branch->getMotherCommitIndex();
+
+#todo remove revision_id
 
         $db->execute("
-            INSERT INTO `indra_old_branch`
+            INSERT INTO `indra_branch`
                 SET
-                      `branch_id` = '" . $branch->getId() . "',
-                      `revision_id` = '" . $revisionId . "'
+                      `branch_id` = '" . $branch->getBranchId() . "',
+`revision_id` = '" . $revisionId . "',
+                      `commit_index` = '" . $branch->getCommitIndex() . "',
+                      `mother_branch_id` = " . ($motherBranchId ? "'" . $motherBranchId . "'" : 'null') . ",
+                      `mother_commit_index` = " . ($motherCommitIndex ? $motherCommitIndex : 'null') . "
                 ON DUPLICATE KEY UPDATE
                        `revision_id` = '" . $revisionId . "'
         ");
@@ -223,22 +254,25 @@ class MySqlTripleStore implements TripleStore
     {
         $db = Context::getDB();
 
-        $branch = new Branch($branchId);
-
-        $revisionId = $db->querySingleCell("
-            SELECT `revision_id`
-            FROM `indra_old_branch`
+        $branchData = $db->querySingleRow("
+            SELECT `revision_id`, `commit_index`, `mother_branch_id`, `mother_commit_index`
+            FROM `indra_branch`
             WHERE `branch_id` = '" . $branchId . "'
         ");
 
-        if ($revisionId) {
-            $revision = new Revision($revisionId);
-        } else {
-            $revision = new BaseRevision();
-        }
-        $branch->setActiveRevision($revision);
+        if ($branchData) {
 
-        return $branch;
+            $branch = new Branch($branchId, $branchData['mother_branch_id'], $branchData['mother_commit_index']);
+            $branch->setCommitIndex($branchData['commit_index']);
+
+            $revision = new Revision($branchData['revision_id']);
+            $branch->setActiveRevision($revision);
+
+            return $branch;
+
+        } else {
+            return null;
+        }
     }
 
     public function save(DomainObject $object, Revision $revision, Branch $branch)
@@ -406,7 +440,7 @@ class MySqlTripleStore implements TripleStore
     private function getTripleData($objectId, $attributeId, $dataType, Branch $branch)
     {
         $branchToken = $branch->isMaster() ? '' : 'branch_';
-        $branchClause = $branch->isMaster() ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
+        $branchClause = $branch->isMaster() ? "" : "`branch_id` = '" . $branch->getBranchId() . "' AND\n";
 
         return Context::getDB()->querySingleRow("
             SELECT `triple_id`, `value`
@@ -448,7 +482,7 @@ class MySqlTripleStore implements TripleStore
 
         $attributeValues = [];
         $branchToken = ($branch->isMaster()) ? '' : 'branch_';
-        $branchClause = ($branch->isMaster()) ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
+        $branchClause = ($branch->isMaster()) ? "" : "`branch_id` = '" . $branch->getBranchId() . "' AND\n";
         $typeFound = false;
 
         foreach ($this->getDataTypesOfType($type) as $dataType) {
@@ -517,7 +551,7 @@ class MySqlTripleStore implements TripleStore
         $activeness = $active ? 'active' : 'inactive';
 
         $branchToken = $branch->isMaster() ? '' : 'branch_';
-        $branchClause = $branch->isMaster() ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
+        $branchClause = $branch->isMaster() ? "" : "`branch_id` = '" . $branch->getBranchId() . "' AND\n";
 
         $exists = $db->querySingleCell("
                     SELECT COUNT(*)
@@ -531,7 +565,7 @@ class MySqlTripleStore implements TripleStore
 
         if (!$exists) {
 
-            $branchClause = $branch->isMaster() ? "" : "`branch_id` = '" . $branch->getId() . "',\n";
+            $branchClause = $branch->isMaster() ? "" : "`branch_id` = '" . $branch->getBranchId() . "',\n";
 
             $tripleId = Context::getIdGenerator()->generateId();
 
@@ -556,7 +590,7 @@ class MySqlTripleStore implements TripleStore
         $db = Context::getDB();
 
         $branchToken = $branch->isMaster() ? '' : 'branch_';
-        $branchClause = $branch ->isMaster() ? "" : "`branch_id` = '" . $branch->getId() . "' AND\n";
+        $branchClause = $branch ->isMaster() ? "" : "`branch_id` = '" . $branch->getBranchId() . "' AND\n";
 
         $db->execute("
                     INSERT INTO indra_{$branchToken}inactive_" . $dataType . "
@@ -620,7 +654,7 @@ class MySqlTripleStore implements TripleStore
         }
 
         $fromBranchToken = $fromBranch->isMaster() ? '' : 'branch_';
-        $fromBranchClause = $fromBranch->isMaster() ? "" : "`branch_id` = '" . $fromBranch->getId() . "' AND\n";
+        $fromBranchClause = $fromBranch->isMaster() ? "" : "`branch_id` = '" . $fromBranch->getBranchId() . "' AND\n";
         $fromActiveness = $fromActive ? 'active_' : 'inactive_';
 
         $toBranchToken = $toBranch->isMaster() ? '' : 'branch_';

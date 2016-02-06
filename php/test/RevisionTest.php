@@ -33,7 +33,8 @@ class RevisionTest extends Base
         // change name
         $customer->setName('Dr. Who');
         $customerModel->saveCustomer($customer);
-        $revision = $domain->commit('Dr. Jones renamed to Dr. Who');
+#todo remove
+        list($revision, $commit) = $domain->commit('Dr. Jones renamed to Dr. Who');
 
         // revert change
         $undoRevision = $domain->revertRevision($revision);
