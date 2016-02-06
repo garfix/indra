@@ -2,10 +2,12 @@
 
 namespace indra\service;
 
+use indra\diff\AttributeValueChanged;
 use indra\object\DomainObject;
 use indra\storage\BaseRevision;
 use indra\storage\Branch;
 use indra\storage\Commit;
+use indra\storage\DomainObjectTypeCommit;
 use indra\storage\MySqlViewStore;
 use indra\storage\Revision;
 use indra\storage\ViewStore;
@@ -142,12 +144,42 @@ class Domain
             $this->getViewStore()->updateView($object);
         }
 
+        $this->storeDiffs($branch->getBranchId(), $branch->getCommitIndex());
+
         $this->saveList = [];
 
         $this->activeRevision = $revision;
 
 #todo only commit
         return [$revision, $commit];
+    }
+
+    public function storeDiffs($branchId, $commitIndex)
+    {
+        $tripleStore = Context::getTripleStore();
+
+#todo this must be much improved
+# do not store what is deleted, etc
+
+        $objectTypeDiff = [];
+
+        foreach ($this->saveList as $object) {
+
+            $typeId = $object->getType()->getId();
+
+            foreach ($object->getChangedAttributeValues() as $attributeTypeId => list($oldValue, $newValue)) {
+
+                $objectTypeDiff[$typeId][] = new AttributeValueChanged($object->getId(), $attributeTypeId, $newValue, $oldValue);
+            }
+        }
+
+        foreach ($objectTypeDiff as $typeId => $diffItems) {
+
+            $dotCommit = new DomainObjectTypeCommit($branchId, $typeId, $commitIndex, $diffItems);
+
+            $tripleStore->storeDomainObjectTypeCommit($dotCommit);
+
+        }
     }
 
     /**

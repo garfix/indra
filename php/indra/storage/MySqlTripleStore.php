@@ -9,6 +9,7 @@ use indra\object\Attribute;
 use indra\object\DomainObject;
 use indra\object\Type;
 use indra\service\Context;
+use indra\service\DiffSerializer;
 
 /**
  * @author Patrick van Bergen
@@ -704,5 +705,22 @@ class MySqlTripleStore implements TripleStore
 
         $this->moveTriples($fromBranch, $toBranch, $deactivationTripleIds, false, false);
         $this->moveTriples($fromBranch, $toBranch, $activationTripleIds, true, true);
+    }
+
+    public function storeDomainObjectTypeCommit(DomainObjectTypeCommit $dotCommit)
+    {
+        $db = Context::getDB();
+
+        $serializer = new DiffSerializer();
+        $diff = $serializer->serializeDiffItems($dotCommit->getDiffItems());
+
+        $db->execute("
+            INSERT INTO `indra_commit_type`
+                SET
+                      `branch_id` = '" . $dotCommit->getBranchId() . "',
+                      `commit_index` = '" . $dotCommit->getCommitIndex() . "',
+                      `type_id` = " . $dotCommit->getTypeId() . ",
+                      `diff` = " . $diff . "
+        ");
     }
 }

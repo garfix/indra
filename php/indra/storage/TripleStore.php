@@ -64,4 +64,6 @@ interface TripleStore
     public function revertRevision(Branch $branch, Revision $revision, Revision $undoRevision);
 
     public function mergeRevisions(Branch $fromBranch, Branch $toBranch, Revision $mergeRevision, $revisionIds);
+
+    public function storeDomainObjectTypeCommit(DomainObjectTypeCommit $dotCommit);
 }

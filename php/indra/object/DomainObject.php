@@ -58,4 +58,22 @@ class DomainObject
 #todo check!!!
         $this->attributes = $attributeValues;
     }
+
+    public function getChangedAttributeValues()
+    {
+        $attributes = [];
+
+        foreach ($this->attributes as $attributeTypeId => $newValue) {
+
+            $oldValue = (isset($this->originalAttributes[$attributeTypeId]) ? $this->originalAttributes[$attributeTypeId] : null);
+
+            if ($newValue !== $newValue) {
+
+                $attributes[] = [$oldValue, $newValue];
+
+            }
+        }
+
+        return $attributes;
+    }
 }
