@@ -123,16 +123,8 @@ class MySqlTripleStore implements TripleStore
             ) engine InnoDB
         ");
 
-//        $db->execute("
-//            CREATE TABLE IF NOT EXISTS indra_old_branch (
-//					`branch_id`				    binary(22) not null,
-//					`revision_id` 		        binary(22) not null,
-//					primary key (`branch_id`)
-//            ) engine InnoDB
-//        ");
-
 //$db->execute("
-//    DROP TABLE indra_branch
+//    DROP TABLE indra_branch_view
 //");
 
 #todo: remove revision_id
@@ -173,8 +165,9 @@ class MySqlTripleStore implements TripleStore
         $db->execute("
             CREATE TABLE IF NOT EXISTS indra_branch_view (
 					`branch_id`				    binary(22) not null,
+					`type_id`				    binary(22) not null,
 					`view_id`	                binary(22) not null,
-					primary key (`branch_id`)
+					primary key (`branch_id`, `type_id`)
             ) engine InnoDB
         ");
 
@@ -247,6 +240,7 @@ class MySqlTripleStore implements TripleStore
                       `mother_branch_id` = " . ($motherBranchId ? "'" . $motherBranchId . "'" : 'null') . ",
                       `mother_commit_index` = " . ($motherCommitIndex ? $motherCommitIndex : 'null') . "
                 ON DUPLICATE KEY UPDATE
+                        `commit_index` = '" . $branch->getCommitIndex() . "',
                        `revision_id` = '" . $revisionId . "'
         ");
     }
@@ -571,7 +565,7 @@ class MySqlTripleStore implements TripleStore
             $tripleId = Context::getIdGenerator()->generateId();
 
             $db->execute("
-                INSERT IGNORE INTO indra_" . $branchToken . $activeness . "_" . $dataType . "
+                INSERT INTO indra_" . $branchToken . $activeness . "_" . $dataType . "
                 SET
                     {$branchClause}
                     `triple_id` = '" . $tripleId . "',
@@ -719,8 +713,66 @@ class MySqlTripleStore implements TripleStore
                 SET
                       `branch_id` = '" . $dotCommit->getBranchId() . "',
                       `commit_index` = '" . $dotCommit->getCommitIndex() . "',
-                      `type_id` = " . $dotCommit->getTypeId() . ",
-                      `diff` = " . $diff . "
+                      `type_id` = '" . $dotCommit->getTypeId() . "',
+                      `diff` = '" . $diff . "'
         ");
+    }
+
+    public function getBranchView($branchId, $typeId)
+    {
+        $db = Context::getDB();
+
+        $viewId = $db->querySingleCell("
+            SELECT view_id
+            FROM indra_branch_view
+            WHERE branch_id = '" . $branchId . "' AND type_id = '" . $typeId . "'");
+
+        if ($viewId) {
+            $branchView = new BranchView($branchId, $typeId, $viewId);
+        } else {
+            $branchView = null;
+        }
+
+        return $branchView;
+    }
+
+    public function storeBranchView(BranchView $branchView, Type $type)
+    {
+        $db = Context::getDB();
+
+        $db->execute("
+            INSERT INTO indra_branch_view
+            SET branch_id = '" . $branchView->getBranchId() . "',
+                type_id = '" . $branchView->getTypeId() . "',
+                view_id = '" . $branchView->getViewId() . "'
+        ");
+
+        $columns = [];
+
+        foreach ($type->getAttributes() as $attribute) {
+            $columns[$attribute->getId()] = $this->getMySqlDataType($attribute->getDataType());
+        }
+
+        $fields = "";
+        foreach ($columns as $id => $dataType) {
+            $fields .= $id . ' ' . $this->getMySqlDataType($dataType) . ",\n";
+        }
+
+        // when testing we don't want real tables;
+        // not just because they have to be removed, but especially because a 'create table' statement _implicitly commits the transaction_
+        $temporary = Context::inTestMode() ? "TEMPORARY" : "";
+
+        $db->execute("
+            CREATE {$temporary} TABLE view_" . $branchView->getViewId() . " (
+                `id` binary(22) NOT NULL,
+                {$fields}
+                primary key (`id`)
+            ) engine InnoDB"
+        );
+    }
+
+    private function getMySqlDataType($dataType)
+    {
+        return ($dataType == 'varchar') ? 'varchar(255)' : $dataType;
     }
 }

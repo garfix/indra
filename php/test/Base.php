@@ -23,6 +23,8 @@ class Base extends PHPUnit_Framework_TestCase
 
     public static function initialize()
     {
+        Context::setTestMode(true);
+
         if (!self::$initialized) {
 
             if (self::REMOVE_GENERATED_CLASSES) {
@@ -62,7 +64,7 @@ class Base extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         $mysqli = Context::getMySqli();
-        $mysqli->autocommit(false);
+        $mysqli->begin_transaction(true);
     }
 
     public function test()

@@ -4,8 +4,10 @@ namespace indra\service;
 
 use indra\diff\AttributeValueChanged;
 use indra\object\DomainObject;
+use indra\object\Type;
 use indra\storage\BaseRevision;
 use indra\storage\Branch;
+use indra\storage\BranchView;
 use indra\storage\Commit;
 use indra\storage\DomainObjectTypeCommit;
 use indra\storage\MySqlViewStore;
@@ -144,7 +146,7 @@ class Domain
             $this->getViewStore()->updateView($object);
         }
 
-        $this->storeDiffs($branch->getBranchId(), $branch->getCommitIndex());
+        $this->storeDiffs($branch, $branch->getCommitIndex());
 
         $this->saveList = [];
 
@@ -154,18 +156,22 @@ class Domain
         return [$revision, $commit];
     }
 
-    public function storeDiffs($branchId, $commitIndex)
+    public function storeDiffs(Branch $branch, $commitIndex)
     {
         $tripleStore = Context::getTripleStore();
+        $branchId = $branch->getBranchId();
 
 #todo this must be much improved
 # do not store what is deleted, etc
 
         $objectTypeDiff = [];
+        $types = [];
 
         foreach ($this->saveList as $object) {
 
             $typeId = $object->getType()->getId();
+
+            $types[$typeId] = $object->getType();
 
             foreach ($object->getChangedAttributeValues() as $attributeTypeId => list($oldValue, $newValue)) {
 
@@ -179,6 +185,19 @@ class Domain
 
             $tripleStore->storeDomainObjectTypeCommit($dotCommit);
 
+            $this->updateBranchView($branch, $types[$typeId]);
+        }
+    }
+
+    private function updateBranchView(Branch $branch, Type $type)
+    {
+        $tripleStore = Context::getTripleStore();
+
+        $branchView = $tripleStore->getBranchView($branch->getBranchId(), $type->getId());
+
+        if (!$branchView) {
+            $branchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
+            $tripleStore->storeBranchView($branchView, $type);
         }
     }
 

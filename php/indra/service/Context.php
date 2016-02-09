@@ -31,6 +31,9 @@ class Context
     /** @var  DB */
     private static $db;
 
+    /** @var bool  */
+    private static $testMode = false;
+
     /** @var  TripleStore */
     private static $tripleStore;
 
@@ -40,6 +43,7 @@ class Context
     /** @var  DateTimeGenerator */
     private static $dateTimeGenerator;
 
+    /** @var  UserNameProvider */
     private static $userNameProvider;
 
     /**
@@ -53,6 +57,16 @@ class Context
         self::$dateTimeGenerator = null;
         self::$db = null;
         self::$userNameProvider = null;
+    }
+
+    public static function setTestMode($testMode)
+    {
+        self::$testMode = $testMode;
+    }
+
+    public static function inTestMode()
+    {
+        return self::$testMode;
     }
 
     /**

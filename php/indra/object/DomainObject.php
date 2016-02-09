@@ -67,7 +67,7 @@ class DomainObject
 
             $oldValue = (isset($this->originalAttributes[$attributeTypeId]) ? $this->originalAttributes[$attributeTypeId] : null);
 
-            if ($newValue !== $newValue) {
+            if ($oldValue !== $newValue) {
 
                 $attributes[] = [$oldValue, $newValue];
 

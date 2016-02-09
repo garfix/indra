@@ -66,4 +66,8 @@ interface TripleStore
     public function mergeRevisions(Branch $fromBranch, Branch $toBranch, Revision $mergeRevision, $revisionIds);
 
     public function storeDomainObjectTypeCommit(DomainObjectTypeCommit $dotCommit);
+
+    public function getBranchView($branchId, $typeId);
+
+    public function storeBranchView(BranchView $branchView, Type $type);
 }

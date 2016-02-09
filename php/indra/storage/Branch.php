@@ -14,7 +14,7 @@ class Branch
 
     protected $branchId = null;
 
-    protected $commitIndex = null;
+    protected $commitIndex = 0;
 
     /** @var Commit */
     protected $motherCommitIndex = null;
