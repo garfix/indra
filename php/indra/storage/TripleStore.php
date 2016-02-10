@@ -2,9 +2,12 @@
 
 namespace indra\storage;
 
+use indra\diff\DiffItem;
 use indra\exception\DataBaseException;
 use indra\object\DomainObject;
 use indra\object\Type;
+
+#todo: dit is geen triplestore meer & de klasse heeft te veel verantwoordelijkheden
 
 /**
  * @author Patrick van Bergen
@@ -67,7 +70,11 @@ interface TripleStore
 
     public function storeDomainObjectTypeCommit(DomainObjectTypeCommit $dotCommit);
 
+    public function getNumberOfBranchesUsingView(BranchView $branchView);
+
     public function getBranchView($branchId, $typeId);
 
     public function storeBranchView(BranchView $branchView, Type $type);
+
+    public function processDiffItem(BranchView $branchView, DiffItem $diffItem);
 }

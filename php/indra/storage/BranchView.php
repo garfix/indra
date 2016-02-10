@@ -47,4 +47,12 @@ class BranchView
     {
         return $this->viewId;
     }
+
+    /**
+     * @return string
+     */
+    public function getTableName()
+    {
+        return 'view_' . $this->viewId;
+    }
 }

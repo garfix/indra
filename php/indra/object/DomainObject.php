@@ -69,7 +69,7 @@ class DomainObject
 
             if ($oldValue !== $newValue) {
 
-                $attributes[] = [$oldValue, $newValue];
+                $attributes[$attributeTypeId] = [$oldValue, $newValue];
 
             }
         }

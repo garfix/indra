@@ -3,6 +3,7 @@
 namespace indra\service;
 
 use indra\diff\AttributeValueChanged;
+use indra\diff\DiffItem;
 use indra\object\DomainObject;
 use indra\object\Type;
 use indra\storage\BaseRevision;
@@ -185,19 +186,24 @@ class Domain
 
             $tripleStore->storeDomainObjectTypeCommit($dotCommit);
 
-            $this->updateBranchView($branch, $types[$typeId]);
+            $this->updateBranchView($branch, $types[$typeId], $diffItems);
         }
     }
 
-    private function updateBranchView(Branch $branch, Type $type)
+    private function updateBranchView(Branch $branch, Type $type, array $diffItems)
     {
         $tripleStore = Context::getTripleStore();
 
         $branchView = $tripleStore->getBranchView($branch->getBranchId(), $type->getId());
 
-        if (!$branchView) {
+        // if this branch has no view, or if it is used by other branches as well, create a new view
+        if (!$branchView || ($tripleStore->getNumberOfBranchesUsingView($branchView) > 1)) {
             $branchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
             $tripleStore->storeBranchView($branchView, $type);
+        }
+
+        foreach ($diffItems as $diffItem) {
+            $tripleStore->processDiffItem($branchView, $diffItem);
         }
     }
 

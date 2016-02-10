@@ -2,7 +2,10 @@
 
 namespace indra\storage;
 
+use indra\diff\AttributeValueChanged;
+use indra\diff\DiffItem;
 use indra\exception\DataBaseException;
+use indra\exception\DiffItemClassNotRecognizedException;
 use indra\exception\ObjectCreationError;
 use indra\exception\ObjectNotFoundException;
 use indra\object\Attribute;
@@ -718,6 +721,17 @@ class MySqlTripleStore implements TripleStore
         ");
     }
 
+    public function getNumberOfBranchesUsingView(BranchView $branchView)
+    {
+        $db = Context::getDB();
+
+        return $db->querySingleCell("
+            SELECT COUNT(*)
+            FROM `indra_branch_view`
+            WHERE `view_id` = '". $db->esc($branchView->getViewId()) . "'
+        ");
+    }
+
     public function getBranchView($branchId, $typeId)
     {
         $db = Context::getDB();
@@ -774,5 +788,22 @@ class MySqlTripleStore implements TripleStore
     private function getMySqlDataType($dataType)
     {
         return ($dataType == 'varchar') ? 'varchar(255)' : $dataType;
+    }
+
+    public function processDiffItem(BranchView $branchView, DiffItem $diffItem)
+    {
+        $db = Context::getDB();
+
+        if ($diffItem instanceof AttributeValueChanged) {
+
+            $db->execute("
+                UPDATE `" . $branchView->getTableName() . "`
+                SET `" . $diffItem->getAttributeTypeId() . "` = '" . $db->esc($diffItem->getNewValue()) . "'
+                WHERE id = '" . $db->esc($diffItem->getObjectId()) . "'
+            ");
+
+        } else {
+            throw new DiffItemClassNotRecognizedException();
+        }
     }
 }
