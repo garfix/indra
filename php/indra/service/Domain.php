@@ -3,7 +3,7 @@
 namespace indra\service;
 
 use indra\diff\AttributeValueChanged;
-use indra\diff\DiffItem;
+use indra\diff\ObjectAdded;
 use indra\object\DomainObject;
 use indra\object\Type;
 use indra\storage\BaseRevision;
@@ -174,10 +174,15 @@ class Domain
 
             $types[$typeId] = $object->getType();
 
+            // add / update object (the situation is handled in the database class)
+            $objectTypeDiff[$typeId][] = new ObjectAdded($object->getId());
+
             foreach ($object->getChangedAttributeValues() as $attributeTypeId => list($oldValue, $newValue)) {
 
                 $objectTypeDiff[$typeId][] = new AttributeValueChanged($object->getId(), $attributeTypeId, $newValue, $oldValue);
             }
+
+#todo: new objects should be inserted as a single operation, of course
         }
 
         foreach ($objectTypeDiff as $typeId => $diffItems) {
@@ -197,9 +202,13 @@ class Domain
         $branchView = $tripleStore->getBranchView($branch->getBranchId(), $type->getId());
 
         // if this branch has no view, or if it is used by other branches as well, create a new view
-        if (!$branchView || ($tripleStore->getNumberOfBranchesUsingView($branchView) > 1)) {
+        if (!$branchView) {
             $branchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
             $tripleStore->storeBranchView($branchView, $type);
+        } elseif ($tripleStore->getNumberOfBranchesUsingView($branchView) > 1) {
+# unused code as yet!
+            $newBranchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
+            $tripleStore->cloneBranchView($newBranchView, $branchView);
         }
 
         foreach ($diffItems as $diffItem) {

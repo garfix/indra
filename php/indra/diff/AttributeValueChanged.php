@@ -54,6 +54,4 @@ class AttributeValueChanged extends DiffItem
     {
         return $this->newValue;
     }
-
-
 }

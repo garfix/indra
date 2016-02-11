@@ -4,6 +4,7 @@ namespace indra\storage;
 
 use indra\diff\AttributeValueChanged;
 use indra\diff\DiffItem;
+use indra\diff\ObjectAdded;
 use indra\exception\DataBaseException;
 use indra\exception\DiffItemClassNotRecognizedException;
 use indra\exception\ObjectCreationError;
@@ -777,7 +778,7 @@ class MySqlTripleStore implements TripleStore
         $temporary = Context::inTestMode() ? "TEMPORARY" : "";
 
         $db->execute("
-            CREATE {$temporary} TABLE view_" . $branchView->getViewId() . " (
+            CREATE {$temporary} TABLE " . $branchView->getTableName() . " (
                 `id` binary(22) NOT NULL,
                 {$fields}
                 primary key (`id`)
@@ -802,8 +803,42 @@ class MySqlTripleStore implements TripleStore
                 WHERE id = '" . $db->esc($diffItem->getObjectId()) . "'
             ");
 
+        } elseif ($diffItem instanceof ObjectAdded) {
+
+            // the IGNORE serves the UPDATE of an object
+
+            $db->execute("
+                INSERT IGNORE INTO `" . $branchView->getTableName() . "`
+                SET id = '" . $db->esc($diffItem->getObjectId()) . "'
+            ");
+
         } else {
             throw new DiffItemClassNotRecognizedException();
         }
+    }
+
+    public function cloneBranchView(BranchView $newBranchView, BranchView $oldBranchView)
+    {
+        $db = Context::getDB();
+
+        $db->execute("
+            INSERT INTO indra_branch_view
+            SET branch_id = '" . $newBranchView->getBranchId() . "',
+                type_id = '" . $newBranchView->getTypeId() . "',
+                view_id = '" . $newBranchView->getViewId() . "'
+        ");
+
+        // when testing we don't want real tables;
+        // not just because they have to be removed, but especially because a 'create table' statement _implicitly commits the transaction_
+        $temporary = Context::inTestMode() ? "TEMPORARY" : "";
+
+        $db->execute("
+            CREATE {$temporary} TABLE " . $newBranchView->getTableName() . " AS
+            SELECT * FROM " . $oldBranchView->getTableName() . "
+        ");
+        $db->execute("
+            ALTER TABLE " . $newBranchView->getTableName() . " ADD PRIMARY KEY (id)
+        ");
+#todo: copy all other indexes on the old table
     }
 }
