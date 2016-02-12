@@ -144,6 +144,7 @@ class Domain
         // add the changes to the revision
         foreach ($this->saveList as $object) {
             $tripleStore->save($object, $revision, $this->getActiveBranch());
+            $object->markAsSaved();
             $this->getViewStore()->updateView($object);
         }
 
@@ -174,8 +175,10 @@ class Domain
 
             $types[$typeId] = $object->getType();
 
-            // add / update object (the situation is handled in the database class)
-            $objectTypeDiff[$typeId][] = new ObjectAdded($object->getId());
+            if ($object->isNew()) {
+                // add / update object (the situation is handled in the database class)
+                $objectTypeDiff[$typeId][] = new ObjectAdded($object->getId());
+            }
 
             foreach ($object->getChangedAttributeValues() as $attributeTypeId => list($oldValue, $newValue)) {
 

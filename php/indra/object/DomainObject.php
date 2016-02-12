@@ -59,6 +59,16 @@ class DomainObject
         $this->attributes = $attributeValues;
     }
 
+    public function isNew()
+    {
+        return empty($this->originalAttributes);
+    }
+
+    public function markAsSaved()
+    {
+        $this->originalAttributes = $this->attributes;
+    }
+
     public function getChangedAttributeValues()
     {
         $attributes = [];

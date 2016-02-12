@@ -5,7 +5,8 @@ namespace {{ namespace }};
 use indra\service\Context;
 use indra\object\DomainObject;
 use indra\object\Model;
-use indra\storage\BaseRevision;
+use indra\exception\ObjectCreationError;
+use indra\exception\ObjectNotFoundException;
 
 /**
  * This class was auto-generated. Do not change it, for it will be overwritten.
@@ -34,6 +35,12 @@ class {{ className }} extends Model
         $this->domain->addToSaveList($object);
     }
 
+    /**
+     * @param $objectId
+     * @return {{ typeName }}
+     * @throws ObjectCreationError
+     * @throws ObjectNotFoundException
+     */
     public function load{{ typeName }}($objectId)
     {
         $attributes = Context::getTripleStore()->loadAttributes($this->getType(), $objectId, $this->domain->getActiveBranch());

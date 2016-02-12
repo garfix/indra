@@ -390,31 +390,6 @@ class MySqlTripleStore implements TripleStore
         $this->moveTriples($branch, $branch, $activationTripleIds, false, true);
     }
 
-//    public function getRevisionObjectIds(Revision $revision)
-//    {
-//        $db = Context::getDB();
-//
-//        $q = "
-//            SELECT `object_id`
-//            FROM `indra_revision_object`
-//            WHERE `revision_id` = '" . $db->esc($revision->getId())  . "'
-//        ";
-//
-//        return $db->querySingleColumn($q);
-//    }
-
-//    private function writeRevisionObject($revisionId, $objectId)
-//    {
-//        $db = Context::getDB();
-//
-//        $db->execute("
-//            INSERT INTO `indra_revision_object`
-//              SET
-//                  `revision_id` = '" . $revisionId . "',
-//                  `object_id` = '" . $objectId . "'
-//        ");
-//    }
-
     private function writeRevisionAction($revisionId, $action, $tripleId)
     {
         $db = Context::getDB();
@@ -609,41 +584,6 @@ class MySqlTripleStore implements TripleStore
 
     }
 
-//    private function deactivateTriples(Branch $fromBranch, Branch $toBranch, $tripleIds)
-//    {
-//        $db = Context::getDB();
-//
-//        if (empty($tripleIds)) {
-//            return;
-//        }
-//
-//
-//        $fromBranchToken = ($fromBranch instanceof MasterBranch) ? '' : 'branch_';
-//        $fromBranchClause = ($fromBranch instanceof MasterBranch) ? "" : "`branch_id` = '" . $fromBranch->getId() . "' AND\n";
-//
-//        $toBranchToken = ($toBranch instanceof MasterBranch) ? '' : 'branch_';
-//        $toBranchClause = ($toBranch instanceof MasterBranch) ? "" : "`branch_id` = '" . $toBranch->getId() . "' AND\n";
-//
-//        foreach ($this->getAllDataTypes() as $dataType) {
-//
-//            $db->execute("
-//                INSERT INTO `indra_{$toBranchToken}inactive_" . $dataType . "` (`triple_id`, `object_id`, `attribute_id`, `value`)
-//                SELECT `triple_id`, `object_id`, `attribute_id`, `value`
-//                FROM `indra_{$fromBranchToken}active_" . $dataType . "`
-//                WHERE
-//                    {$fromBranchClause}
-//                    `triple_id` IN ('" . implode("', '", $tripleIds) . "')
-//            ");
-//
-//            $db->execute("
-//                DELETE FROM indra_{$fromBranchToken}active_" . $dataType . "
-//                WHERE
-//                    {$fromBranchClause}
-//                    `triple_id` IN ('" . implode("', '", $tripleIds) . "')
-//            ");
-//        }
-//    }
-
     private function moveTriples(Branch $fromBranch, Branch $toBranch, $tripleIds, $fromActive, $toActive)
     {
         $db = Context::getDB();
@@ -805,10 +745,8 @@ class MySqlTripleStore implements TripleStore
 
         } elseif ($diffItem instanceof ObjectAdded) {
 
-            // the IGNORE serves the UPDATE of an object
-
             $db->execute("
-                INSERT IGNORE INTO `" . $branchView->getTableName() . "`
+                INSERT INTO `" . $branchView->getTableName() . "`
                 SET id = '" . $db->esc($diffItem->getObjectId()) . "'
             ");
 
