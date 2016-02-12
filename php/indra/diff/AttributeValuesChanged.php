@@ -2,11 +2,10 @@
 
 namespace indra\diff;
 
-
 /**
  * @author Patrick van Bergen
  */
-class ObjectAdded extends DiffItem
+class AttributeValuesChanged extends DiffItem
 {
     private $objectId;
 

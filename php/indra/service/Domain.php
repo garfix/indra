@@ -2,7 +2,7 @@
 
 namespace indra\service;
 
-use indra\diff\AttributeValueChanged;
+use indra\diff\AttributeValuesChanged;
 use indra\diff\ObjectAdded;
 use indra\object\DomainObject;
 use indra\object\Type;
@@ -144,11 +144,14 @@ class Domain
         // add the changes to the revision
         foreach ($this->saveList as $object) {
             $tripleStore->save($object, $revision, $this->getActiveBranch());
-            $object->markAsSaved();
             $this->getViewStore()->updateView($object);
         }
 
         $this->storeDiffs($branch, $branch->getCommitIndex());
+
+        foreach ($this->saveList as $object) {
+            $object->markAsSaved();
+        }
 
         $this->saveList = [];
 
@@ -175,14 +178,17 @@ class Domain
 
             $types[$typeId] = $object->getType();
 
+            $changedValues = $object->getChangedAttributeValues();
+
             if ($object->isNew()) {
+
                 // add / update object (the situation is handled in the database class)
-                $objectTypeDiff[$typeId][] = new ObjectAdded($object->getId());
-            }
+                $objectTypeDiff[$typeId][] = new ObjectAdded($object->getId(), $changedValues);
 
-            foreach ($object->getChangedAttributeValues() as $attributeTypeId => list($oldValue, $newValue)) {
+            } elseif ($changedValues) {
 
-                $objectTypeDiff[$typeId][] = new AttributeValueChanged($object->getId(), $attributeTypeId, $newValue, $oldValue);
+                $objectTypeDiff[$typeId][] = new AttributeValuesChanged($object->getId(), $changedValues);
+
             }
 
 #todo: new objects should be inserted as a single operation, of course

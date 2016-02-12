@@ -2,7 +2,7 @@
 
 namespace indra\storage;
 
-use indra\diff\AttributeValueChanged;
+use indra\diff\AttributeValuesChanged;
 use indra\diff\DiffItem;
 use indra\diff\ObjectAdded;
 use indra\exception\DataBaseException;
@@ -735,24 +735,43 @@ class MySqlTripleStore implements TripleStore
     {
         $db = Context::getDB();
 
-        if ($diffItem instanceof AttributeValueChanged) {
+        if ($diffItem instanceof AttributeValuesChanged) {
+
+            $values = $this->createValueClause($diffItem->getAttributeValues());
 
             $db->execute("
                 UPDATE `" . $branchView->getTableName() . "`
-                SET `" . $diffItem->getAttributeTypeId() . "` = '" . $db->esc($diffItem->getNewValue()) . "'
+                SET {$values}
                 WHERE id = '" . $db->esc($diffItem->getObjectId()) . "'
             ");
 
         } elseif ($diffItem instanceof ObjectAdded) {
 
+            $values = $this->createValueClause($diffItem->getAttributeValues());
+
             $db->execute("
                 INSERT INTO `" . $branchView->getTableName() . "`
-                SET id = '" . $db->esc($diffItem->getObjectId()) . "'
+                SET id = '" . $db->esc($diffItem->getObjectId()) . "',
+                {$values}
             ");
 
         } else {
             throw new DiffItemClassNotRecognizedException();
         }
+    }
+
+    private function createValueClause(array $attributeValues)
+    {
+        $values = "";
+        $db = Context::getDB();
+
+        foreach ($attributeValues as $attributeId => list($oldValue, $newValue)) {
+
+            $values .= $values ? ", " : "";
+            $values .= "`" . $attributeId . "` = '" . $db->esc($newValue) . "'";
+        }
+
+        return $values;
     }
 
     public function cloneBranchView(BranchView $newBranchView, BranchView $oldBranchView)

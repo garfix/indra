@@ -2,8 +2,9 @@
 
 namespace indra\service;
 
-use indra\diff\AttributeValueChanged;
+use indra\diff\AttributeValuesChanged;
 use indra\diff\DiffItem;
+use indra\diff\ObjectAdded;
 use indra\exception\DiffItemClassNotRecognizedException;
 
 /**
@@ -24,11 +25,12 @@ class DiffSerializer
 
             $value = ['class' => get_class($diffItem)];
 
-            if ($diffItem instanceof AttributeValueChanged) {
+            if ($diffItem instanceof AttributeValuesChanged) {
                 $value['object'] = $diffItem->getObjectId();
-                $value['attribute'] = $diffItem->getAttributeTypeId();
-                $value['old'] = $diffItem->getOldValue();
-                $value['new'] = $diffItem->getNewValue();
+                $value['attributes'] = $diffItem->getAttributeValues();
+            } elseif ($diffItem instanceof ObjectAdded) {
+                $value['object'] = $diffItem->getObjectId();
+                $value['attributes'] = $diffItem->getAttributeValues();
             } else {
                 throw new DiffItemClassNotRecognizedException();
             }
@@ -40,11 +42,14 @@ class DiffSerializer
     public function deserializeDiffItems($string)
     {
         $diffItems = [];
-        $values = $this->deserializeDiffItems($string);
+        $values = unserialize($string);
 
         foreach ($values as $value) {
-            if ($value == 'AttributeValueChanged') {
-                $diffItem = new AttributeValueChanged($value['object'], $value['attribute'], $value['old'], $value);
+            if ($value == 'AttributeValuesChanged') {
+                $diffItem = new AttributeValuesChanged($value['object'], $value['attributes']);
+                $diffItems[] = $diffItem;
+            } elseif ($value == 'ObjectAdded') {
+                $diffItem = new ObjectAdded($value['object'], $value['attributes']);
                 $diffItems[] = $diffItem;
             } else {
                 throw new DiffItemClassNotRecognizedException();
