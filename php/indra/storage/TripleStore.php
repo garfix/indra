@@ -79,4 +79,6 @@ interface TripleStore
     public function cloneBranchView(BranchView $newBranchView, BranchView $oldBranchView);
 
     public function processDiffItem(BranchView $branchView, DiffItem $diffItem);
+
+    public function createBranch(Branch $branch);
 }

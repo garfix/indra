@@ -56,6 +56,8 @@ class Domain
     {
         $this->activeBranch = new Branch(Context::getIdGenerator()->generateId(), $motherCommit->getBranchId(), $motherCommit->getCommitIndex());
 
+        Context::getTripleStore()->createBranch($this->activeBranch);
+
         return $this->activeBranch;
     }
 
@@ -130,6 +132,7 @@ class Domain
         $dateTime = Context::getDateTimeGenerator()->getDateTime();
         $userName = Context::getUserNameProvider()->getUserName();
 
+        // create a new commit
         $commit = new Commit($branch->getBranchId(), $branch->getCommitIndex(), $commitDescription, $userName, $dateTime->format('Y-m-d H:i:s'));
 
         // store the commit
@@ -167,7 +170,7 @@ class Domain
         $branchId = $branch->getBranchId();
 
 #todo this must be much improved
-# do not store what is deleted, etc
+# do not store what is deleted, check if an object is first created, updated, then deleted, etc.
 
         $objectTypeDiff = [];
         $types = [];
@@ -190,8 +193,6 @@ class Domain
                 $objectTypeDiff[$typeId][] = new AttributeValuesChanged($object->getId(), $changedValues);
 
             }
-
-#todo: new objects should be inserted as a single operation, of course
         }
 
         foreach ($objectTypeDiff as $typeId => $diffItems) {
@@ -215,7 +216,6 @@ class Domain
             $branchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
             $tripleStore->storeBranchView($branchView, $type);
         } elseif ($tripleStore->getNumberOfBranchesUsingView($branchView) > 1) {
-# unused code as yet!
             $newBranchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
             $tripleStore->cloneBranchView($newBranchView, $branchView);
         }

@@ -774,15 +774,23 @@ class MySqlTripleStore implements TripleStore
         return $values;
     }
 
+    /**
+     * When a branch is created, it just makes a shallow copy of all of the views of the mother branch.
+     * When one of the branches sharing the shallow copy changes a view of a type,
+     * it must make a full copy of the view. That's what happens here.
+     *
+     * @param BranchView $newBranchView
+     * @param BranchView $oldBranchView
+     * @throws DataBaseException
+     */
     public function cloneBranchView(BranchView $newBranchView, BranchView $oldBranchView)
     {
         $db = Context::getDB();
 
         $db->execute("
-            INSERT INTO indra_branch_view
-            SET branch_id = '" . $newBranchView->getBranchId() . "',
-                type_id = '" . $newBranchView->getTypeId() . "',
-                view_id = '" . $newBranchView->getViewId() . "'
+            UPDATE indra_branch_view
+            SET view_id = '" . $newBranchView->getViewId() . "'
+            WHERE branch_id = '" . $oldBranchView->getBranchId() . "' AND type_id = '" . $oldBranchView->getTypeId() . "'
         ");
 
         // when testing we don't want real tables;
@@ -793,9 +801,24 @@ class MySqlTripleStore implements TripleStore
             CREATE {$temporary} TABLE " . $newBranchView->getTableName() . " AS
             SELECT * FROM " . $oldBranchView->getTableName() . "
         ");
-        $db->execute("
-            ALTER TABLE " . $newBranchView->getTableName() . " ADD PRIMARY KEY (id)
-        ");
+        if (!Context::inTestMode()) {
+            $db->execute("
+                ALTER TABLE " . $newBranchView->getTableName() . " ADD PRIMARY KEY (id)
+            ");
 #todo: copy all other indexes on the old table
+        }
+    }
+
+    public function createBranch(Branch $branch)
+    {
+        $db = Context::getDB();
+
+        // copy the branch views of the mother branch into the new branch
+        $db->execute("
+            INSERT INTO indra_branch_view (branch_id, type_id, view_id)
+            SELECT '" . $db->esc($branch->getBranchId()) . "', `type_id`, `view_id`
+            FROM indra_branch_view
+            WHERE branch_id = '" . $db->esc($branch->getMotherBranchId()) . "'
+        ");
     }
 }
