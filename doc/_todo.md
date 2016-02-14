@@ -34,3 +34,4 @@ De verschillende verantwoordelijkheden van Domain opsplitsen. Denk na of het mog
 - streef naar een zo klein mogelijke database, gegeven de eisen van de features
 - is het mogelijk om de code-generatie te schedulen: om 2:00 's-nachts worden de nieuwe tabellen gemaakt
 - snapshotting is alleen bedoelt voor debugging, daarom mag het wat trager zijn
+- het idee dat een attribuut bij meerdere types mag horen is niet meer haalbaar (de vraag is ook of het een goed idee is)

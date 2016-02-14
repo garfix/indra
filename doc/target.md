@@ -102,11 +102,6 @@ If a branch view matches a snapshot, that's incidental. Snapshot and branches ar
  - Create a branch from the latest commit of the mother branch
  - Create branch-view objects for all types for this branch (note: no need to copy complete views)
 
-### The type changes
-
- - Classes must be recreated
- - A special type change commit is created
-
 ### Merge
 
 A merge from branch A to branch B goes as follows:
@@ -139,3 +134,8 @@ When a specific commit is checked out by a request, in fact a single snapshot is
 Use the snapshot.
 
 Snapshots may be removed with a single API call.
+
+### The type changes
+
+ - Classes must be recreated
+ - A special type change commit is created

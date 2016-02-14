@@ -319,11 +319,7 @@ class MySqlTripleStore implements TripleStore
 
     public function loadAttributes(Type $type, $objectId, Branch $branch)
     {
-        list($attributeValues, $typeFound) = $this->getAttributeValues($type, $objectId, $branch);
-
-        if (!$typeFound) {
-            throw new ObjectCreationError('No object of this type and id found.');
-        }
+        $attributeValues = $this->getAttributeValues($type, $objectId, $branch);
 
         if (empty($attributeValues)) {
             throw new ObjectNotFoundException();
@@ -338,6 +334,14 @@ class MySqlTripleStore implements TripleStore
 
         $objectId = $object->getId();
 
+        $branchView = $this->getBranchView($branch->getBranchId(), $object->getType()->getId());
+
+        $db->execute("
+            DELETE FROM `" . $branchView->getTableName() . "`
+            WHERE id = '" . $db->esc($objectId) . "'
+        ");
+
+#todo: remove
         foreach ($this->getAllDataTypes() as $dataType) {
 
             $results = $db->queryMultipleRows("
@@ -454,6 +458,14 @@ class MySqlTripleStore implements TripleStore
     {
         $db = Context::getDB();
 
+        $branchView = $this->getBranchView($branch->getBranchId(), $type->getId());
+
+        $attributeValues = $db->querySingleRow("
+            SELECT * FROM `" . $branchView->getTableName() . "`
+            WHERE id = '" . $db->esc($objectId) . "'
+        ");
+
+#todo: remove
         $attributeValues = [];
         $branchToken = ($branch->isMaster()) ? '' : 'branch_';
         $branchClause = ($branch->isMaster()) ? "" : "`branch_id` = '" . $branch->getBranchId() . "' AND\n";
@@ -486,7 +498,7 @@ class MySqlTripleStore implements TripleStore
             }
         }
 
-        return [$attributeValues, $typeFound];
+        return $attributeValues;
     }
 
     /**
