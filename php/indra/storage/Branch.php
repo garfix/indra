@@ -9,9 +9,6 @@ class Branch
 {
     const MASTER = 'master----------------';
 
-    /** @var  Revision */
-    protected $activeRevision = null;
-
     protected $branchId = null;
 
     protected $commitIndex = 0;
@@ -59,21 +56,5 @@ class Branch
     public function isMaster()
     {
         return $this->branchId == self::MASTER;
-    }
-
-    /**
-     * @param Revision $revision
-     */
-    public function setActiveRevision(Revision $revision)
-    {
-        $this->activeRevision = $revision;
-    }
-
-    /**
-     * @return Revision
-     */
-    public function getActiveRevision()
-    {
-        return $this->activeRevision;
     }
 }

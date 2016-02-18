@@ -29,7 +29,7 @@ class MergeBranchesTest extends Base
         $customer->setBirthDate('1969-11-24');
         $customerModel->saveCustomer($customer);
 #todo remove revision
-        list($revision, $commit) = $domain->commit('Add customer Dr. Jones');
+        $commit = $domain->commit('Add customer Dr. Jones');
 
         // start new branch and change customer
 #var_dump("XXX start new branch and change customer");

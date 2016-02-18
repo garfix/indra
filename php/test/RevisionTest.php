@@ -26,18 +26,13 @@ class RevisionTest extends Base
 
         // initial name
         $customer->setName('Dr. Jones');
-        #$revision->addToSaveList($customer);
         $customerModel->saveCustomer($customer);
         $domain->commit('Add customer Dr. Jones');
 
         // change name
         $customer->setName('Dr. Who');
         $customerModel->saveCustomer($customer);
-#todo remove
-        list($revision, $commit) = $domain->commit('Dr. Jones renamed to Dr. Who');
-
-        // revert change
-#        $undoRevision = $domain->revertRevision($revision);
+        $commit = $domain->commit('Dr. Jones renamed to Dr. Who');
 
         $undoCommit = $domain->revertCommit($commit);
 
@@ -46,9 +41,6 @@ class RevisionTest extends Base
         $name = $customer2->getName();
         $this->assertEquals('Dr. Jones', $name);
 
-        // revert the revert
-#        $domain->revertRevision($undoRevision);
-
         $domain->revertCommit($undoCommit);
 
         // test revert revert
@@ -56,6 +48,4 @@ class RevisionTest extends Base
         $name = $customer3->getName();
         $this->assertEquals('Dr. Who', $name);
     }
-
-#todo: saveCustomer niet toegestaan in revision model wereld
 }

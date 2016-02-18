@@ -6,13 +6,11 @@ use indra\diff\AttributeValuesChanged;
 use indra\diff\ObjectAdded;
 use indra\object\DomainObject;
 use indra\object\Type;
-use indra\storage\BaseRevision;
 use indra\storage\Branch;
 use indra\storage\BranchView;
 use indra\storage\Commit;
 use indra\storage\DomainObjectTypeCommit;
 use indra\storage\MySqlViewStore;
-use indra\storage\Revision;
 use indra\storage\ViewStore;
 
 /**
@@ -26,9 +24,6 @@ class Domain
 
     /** @var Branch */
     private $activeBranch = null;
-
-    /** @var  Revision */
-    private $activeRevision = null;
 
     /** @var DomainObject[] */
     private $saveList = [];
@@ -77,7 +72,6 @@ class Domain
 
         if (!$branch) {
             $branch = new Branch(Branch::MASTER, null, null);
-            $branch->setActiveRevision(new BaseRevision());
         }
 
         return $branch;
@@ -96,35 +90,12 @@ class Domain
         $this->saveList[] = $Object;
     }
 
-    private function createRevision($description)
-    {
-        $revision = new Revision(Context::getIdGenerator()->generateId());
-        $revision->setSourceRevision($this->getActiveRevision());
-        $revision->setDescription($description);
-
-        $this->activeRevision = $revision;
-
-        return $revision;
-    }
-
-    /**
-     * @return Revision
-     */
-    public function getActiveRevision()
-    {
-        return $this->activeRevision ?: $this->activeRevision = new BaseRevision();
-    }
-
     public function commit($commitDescription)
     {
         $tripleStore = Context::getTripleStore();
         $branch = $this->getActiveBranch();
 
         $branch->increaseCommitIndex();
-
-        $revision = new Revision(Context::getIdGenerator()->generateId());
-        $revision->setSourceRevision($this->getActiveRevision());
-        $revision->setDescription($commitDescription);
 
         $dateTime = Context::getDateTimeGenerator()->getDateTime();
         $userName = Context::getUserNameProvider()->getUserName();
@@ -134,9 +105,6 @@ class Domain
 
         // store the commit
         $tripleStore->storeCommit($commit);
-
-        // link current branch to new revision
-        $branch->setActiveRevision($revision);
 
         // store the branch
         $tripleStore->saveBranch($branch);
@@ -154,10 +122,8 @@ class Domain
 
         $this->saveList = [];
 
-        $this->activeRevision = $revision;
-
 #todo only commit
-        return [$revision, $commit];
+        return $commit;
     }
 
     public function storeDiffs(Branch $branch, $commitIndex)
@@ -267,19 +233,6 @@ class Domain
         }
 
         return $mergeCommit;
-
-//        // find all revisions of $branch after the common revision
-//        $revisionIds = $this->findMergeableRevisions($target, $source);
-//
-//        // apply these revisions to the other branch
-//        $mergeRevision = new Revision(Context::getIdGenerator()->generateId());
-//        $mergeRevision->setSourceRevision($target->getActiveRevision());
-//        $target->setActiveRevision($mergeRevision);
-//        $tripleStore->mergeRevisions($source, $target, $mergeRevision, $revisionIds);
-//        $tripleStore->saveBranch($target);
-
-
-
     }
 
     /**
@@ -409,58 +362,6 @@ class Domain
         }
 
         return [$mergeableBranchList, $finalCommitId];
-    }
-
-//    private function findMergeableRevisions(Branch $branch1, Branch $branch2)
-//    {
-//        $tripleStore = Context::getTripleStore();
-//
-//        $branch1Revisions = [];
-//        $branch2Revisions = [];
-//
-//        $branch1RevisionId = $branch1->getActiveRevision()->getId();
-//        $branch2RevisionId = $branch2->getActiveRevision()->getId();
-//
-//        do {
-//
-//            $branch1Revisions[] = $branch1RevisionId;
-//            $branch2Revisions[] = $branch2RevisionId;
-//
-//            $branch1Source = $tripleStore->getSourceRevisionId($branch1RevisionId);
-//            $branch2Source = $tripleStore->getSourceRevisionId($branch2RevisionId);
-//
-//            // common revision found!
-//            if (in_array($branch2Source, $branch1Revisions)) {
-//                break;
-//            }
-//            if (in_array($branch1Source, $branch2Revisions)) {
-//                break;
-//            }
-//
-//            $branch1RevisionId = $branch1Source;
-//            $branch2RevisionId = $branch2Source;
-//
-//        } while ($branch1RevisionId != BaseRevision::ID);
-//
-//        return array_reverse($branch2Revisions);
-//    }
-
-    /**
-     * Undoes all actions of $revision.
-     *
-     * @param Revision $revision
-     * @return Revision The undo revision
-     */
-    public function revertRevision(Revision $revision)
-    {
-        $tripleStore = Context::getTripleStore();
-
-        $undoRevision = $this->createRevision(sprintf("Undo revision %s (%s)",
-            $revision->getId(), $revision->getDescription()));
-
-        $tripleStore->revertRevision($this->getActiveBranch(), $revision, $undoRevision);
-
-        return $undoRevision;
     }
 
     /**

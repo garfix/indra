@@ -126,11 +126,9 @@ class MySqlTripleStore implements TripleStore
             ) engine InnoDB
         ");
 
-#todo: remove revision_id
         $db->execute("
             CREATE TABLE IF NOT EXISTS indra_branch (
 					`branch_id`				    binary(22) not null,
-`revision_id` binary(22) not null,
 					`commit_index`              int not null,
 					`mother_branch_id`	        binary(22),
 					`mother_commit_index`       int,
@@ -206,23 +204,18 @@ class MySqlTripleStore implements TripleStore
     public function saveBranch(Branch $branch)
     {
         $db = Context::getDB();
-        $revisionId = $branch->getActiveRevision()->getId();
         $motherBranchId = $branch->getMotherBranchId();
         $motherCommitIndex = $branch->getMotherCommitIndex();
-
-#todo remove revision_id
 
         $db->execute("
             INSERT INTO `indra_branch`
                 SET
                       `branch_id` = '" . $branch->getBranchId() . "',
-`revision_id` = '" . $revisionId . "',
                       `commit_index` = '" . $branch->getCommitIndex() . "',
                       `mother_branch_id` = " . ($motherBranchId ? "'" . $motherBranchId . "'" : 'null') . ",
                       `mother_commit_index` = " . ($motherCommitIndex ? $motherCommitIndex : 'null') . "
                 ON DUPLICATE KEY UPDATE
-                        `commit_index` = '" . $branch->getCommitIndex() . "',
-                       `revision_id` = '" . $revisionId . "'
+                      `commit_index` = '" . $branch->getCommitIndex() . "'
         ");
     }
 
@@ -231,7 +224,7 @@ class MySqlTripleStore implements TripleStore
         $db = Context::getDB();
 
         $branchData = $db->querySingleRow("
-            SELECT `revision_id`, `commit_index`, `mother_branch_id`, `mother_commit_index`
+            SELECT `commit_index`, `mother_branch_id`, `mother_commit_index`
             FROM `indra_branch`
             WHERE `branch_id` = '" . $branchId . "'
         ");
@@ -240,9 +233,6 @@ class MySqlTripleStore implements TripleStore
 
             $branch = new Branch($branchId, $branchData['mother_branch_id'], $branchData['mother_commit_index']);
             $branch->setCommitIndex($branchData['commit_index']);
-
-            $revision = new Revision($branchData['revision_id']);
-            $branch->setActiveRevision($revision);
 
             return $branch;
 
