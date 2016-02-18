@@ -126,9 +126,6 @@ class Domain
         $revision->setSourceRevision($this->getActiveRevision());
         $revision->setDescription($commitDescription);
 
-        // store the revision
-        $tripleStore->storeRevision($revision);
-
         $dateTime = Context::getDateTimeGenerator()->getDateTime();
         $userName = Context::getUserNameProvider()->getUserName();
 
@@ -146,7 +143,6 @@ class Domain
 
         // add the changes to the revision
         foreach ($this->saveList as $object) {
-            $tripleStore->save($object, $revision, $this->getActiveBranch());
             $this->getViewStore()->updateView($object);
         }
 

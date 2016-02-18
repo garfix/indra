@@ -126,10 +126,6 @@ class MySqlTripleStore implements TripleStore
             ) engine InnoDB
         ");
 
-//$db->execute("
-//    DROP TABLE indra_branch_view
-//");
-
 #todo: remove revision_id
         $db->execute("
             CREATE TABLE IF NOT EXISTS indra_branch (
@@ -184,24 +180,6 @@ class MySqlTripleStore implements TripleStore
         ");
     }
 
-    /**
-     * @param Revision $revision
-     * @throws DataBaseException
-     */
-    public function storeRevision(Revision $revision)
-    {
-        $db = Context::getDB();
-        $dateTime = Context::getDateTimeGenerator()->getDateTime();
-
-        $db->execute("
-            INSERT INTO `indra_revision`
-              SET
-                  `revision_id` = '" . $revision->getId() . "',
-                  `source_revision_id` = '" . $revision->getSourceRevision()->getId() . "',
-                  `revision_description` = '" . $db->esc($revision->getDescription()) . "',
-                  `revision_datetime` = '" . $dateTime->format('Y-m-d H:i:s') . "'
-        ");
-    }
     /**
      * @param Commit $commit
      * @throws DataBaseException
@@ -273,49 +251,6 @@ class MySqlTripleStore implements TripleStore
         }
     }
 
-    public function save(DomainObject $object, Revision $revision, Branch $branch)
-    {
-        $revisionId = $revision->getId();
-        $type = $object->getType();
-        $attributeValues = $object->getAttributeValues();
-        $objectId = $object->getId();
-
-        // type
-        if ($tripleId = $this->writeTriple($objectId, self::ATTRIBUTE_TYPE_ID, $type->getId(), Attribute::TYPE_VARCHAR, true, $branch)) {
-#todo: only if the type changes
-            if (1) {
-                $this->writeRevisionAction($revisionId, RevisionAction::ACTION_ACTIVATE, $tripleId);
-            }
-        }
-
-        // attributes
-        foreach ($type->getAttributes() as $attribute) {
-
-            $attributeId = $attribute->getId();
-
-            if (isset($attributeValues[$attributeId])) {
-
-                // check if the value has changed
-                $tripleData = $this->getTripleData($objectId, $attributeId, $attribute->getDataType(), $branch);
-
-                // if so, the old value must be deactivated
-                if ($tripleData) {
-                    if ($tripleData['value'] !== $attributeValues[$attributeId]) {
-                        $this->deactivateTriple($tripleData['triple_id'], $objectId, $attributeId, $tripleData['value'], $attribute->getDataType(), $branch);
-                        $this->writeRevisionAction($revisionId, RevisionAction::ACTION_DEACTIVATE, $tripleData['triple_id']);
-                    }
-                }
-
-                if ($tripleId = $this->writeTriple($objectId, $attributeId, $attributeValues[$attributeId], $attribute->getDataType(), true, $branch)) {
-
-                    if (!isset($object->originalAttributes[$attributeId]) || ($object->originalAttributes[$attributeId] != $attributeValues[$attributeId])) {
-                        $this->writeRevisionAction($revisionId, RevisionAction::ACTION_ACTIVATE, $tripleId);
-                    }
-                }
-            }
-        }
-    }
-
     public function loadAttributes(Type $type, $objectId, Branch $branch)
     {
         $attributeValues = $this->getAttributeValues($type, $objectId, $branch);
@@ -371,47 +306,6 @@ class MySqlTripleStore implements TripleStore
             WHERE `revision_id` = '" . $revisionId . "'
         ");
 
-    }
-
-    public function revertRevision(Branch $branch, Revision $revision, Revision $undoRevision)
-    {
-        $this->storeRevision($undoRevision);
-
-        $activationTripleIds = [];
-        $deactivationTripleIds = [];
-        foreach ($this->getRevisionActions($revision) as $revisionAction) {
-            if ($revisionAction->getAction() == RevisionAction::ACTION_ACTIVATE) {
-                $deactivationTripleIds[] = $revisionAction->getTripleId();
-                $this->writeRevisionAction($undoRevision->getId(), RevisionAction::ACTION_DEACTIVATE, $revisionAction->getTripleId());
-            } else {
-                $activationTripleIds[] = $revisionAction->getTripleId();
-                $this->writeRevisionAction($undoRevision->getId(), RevisionAction::ACTION_ACTIVATE, $revisionAction->getTripleId());
-            }
-        }
-
-        $this->moveTriples($branch, $branch, $deactivationTripleIds, true, false);
-        $this->moveTriples($branch, $branch, $activationTripleIds, false, true);
-    }
-
-    private function writeRevisionAction($revisionId, $action, $tripleId)
-    {
-        $db = Context::getDB();
-
-        if ($revisionId === null) {
-            return;
-        }
-
-        if ($revisionId == BaseRevision::ID) {
-            return;
-        }
-
-        $db->execute("
-            INSERT INTO `indra_revision_action`
-              SET
-                  `revision_id` = '" . $revisionId . "',
-                  `triple_id` = '" . $tripleId . "',
-                  `action` = '" . $action . "'
-        ");
     }
 
     private function getTripleData($objectId, $attributeId, $dataType, Branch $branch)

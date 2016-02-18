@@ -30,23 +30,9 @@ interface TripleStore
 
     /**
      * @param DomainObject $object
-     * @param Revision $revision
-     * @param Branch $branch
-     * @return
-     */
-    public function save(DomainObject $object, Revision $revision, Branch $branch);
-
-    /**
-     * @param DomainObject $object
      * @param Branch $branch
      */
     public function remove(DomainObject $object, Branch $branch);
-
-    /**
-     * @param Revision $revision
-     * @throws DataBaseException
-     */
-    public function storeRevision(Revision $revision);
 
     /**
      * @param Commit $commit
@@ -55,16 +41,6 @@ interface TripleStore
     public function storeCommit(Commit $commit);
 
     public function getSourceRevisionId($revisionId);
-
-    /**
-     * Perform $undoRevision to revert $revision.
-     *
-     * @param Branch $branch
-     * @param Revision $revision
-     * @param Revision $undoRevision
-     * @return
-     */
-    public function revertRevision(Branch $branch, Revision $revision, Revision $undoRevision);
 
     public function mergeRevisions(Branch $fromBranch, Branch $toBranch, Revision $mergeRevision, $revisionIds);
 
