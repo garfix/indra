@@ -122,7 +122,6 @@ class Domain
 
         $this->saveList = [];
 
-#todo only commit
         return $commit;
     }
 
@@ -191,6 +190,7 @@ class Domain
     /**
      * @param Branch $source
      * @param Branch $target
+     * @return Commit
      */
     public function mergeBranch(Branch $source, Branch $target, $commitDescription)
     {

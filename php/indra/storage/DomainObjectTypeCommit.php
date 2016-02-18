@@ -2,8 +2,6 @@
 
 namespace indra\storage;
 
-use indra\diff\DiffItem;
-
 /**
  * @author Patrick van Bergen
  */
@@ -17,7 +15,7 @@ class DomainObjectTypeCommit
 
     private $diffItems = [];
 
-    public function __construct($branchId, $typeId, $commitIndex, $diffItems)
+    public function __construct($branchId, $typeId, $commitIndex, array $diffItems)
     {
         $this->branchId = $branchId;
         $this->typeId = $typeId;
@@ -48,11 +46,6 @@ class DomainObjectTypeCommit
     {
         return $this->commitIndex;
     }
-
-//    public function addDiffItem(DiffItem $diffItem)
-//    {
-//        $this->diffItems[] = $diffItem;
-//    }
 
     public function getDiffItems()
     {

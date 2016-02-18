@@ -40,10 +40,6 @@ interface TripleStore
      */
     public function storeCommit(Commit $commit);
 
-    public function getSourceRevisionId($revisionId);
-
-    public function mergeRevisions(Branch $fromBranch, Branch $toBranch, Revision $mergeRevision, $revisionIds);
-
     public function storeDomainObjectTypeCommit(DomainObjectTypeCommit $dotCommit);
 
     public function getNumberOfBranchesUsingView(BranchView $branchView);

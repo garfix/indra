@@ -3,16 +3,13 @@
 namespace indra\service;
 
 use indra\definition\TypeDefinition;
-use indra\object\Model;
 
 /**
  * @author Patrick van Bergen
  */
-class TypeModel extends Model
+class TypeModel
 {
-#todo should not extend model
-
-    public function addType($locatorClass, TypeDefinition $typeDefinition)
+    public function addType($locatorClass, TypeDefinition $typeDefinition, Domain $domain)
     {
         $classCreator = new ClassCreator();
         $classCreator->createClasses($locatorClass, $typeDefinition);
@@ -23,12 +20,12 @@ class TypeModel extends Model
         $typeName = $matches[2];
         $modelClass = $path . '\\' . $typeName . 'Model';
         $methodName = 'create' . $typeName;
-        $model = new $modelClass($this->domain);
+        $model = new $modelClass($domain);
         /** @var Object $object */
         $object = $model->$methodName();
         $type = $object->getType();
 
-        $viewStore = $this->domain->getViewStore();
+        $viewStore = $domain->getViewStore();
         $viewStore->createView($type);
     }
 }

@@ -54,11 +54,11 @@ class Base extends PHPUnit_Framework_TestCase
         $type = new TypeDefinition();
         $type->addAttribute($name);
         $type->addAttribute(AttributeDefinition::create('birthDate')->setDataTypeDate());
-        $typeModel->addType(CustomerPicket::class, $type);
+        $typeModel->addType(CustomerPicket::class, $type, $domain);
 
         $type = new TypeDefinition();
         $type->addAttribute($name);
-        $typeModel->addType(SupplierPicket::class, $type);
+        $typeModel->addType(SupplierPicket::class, $type, $domain);
     }
 
     public function setUp()
