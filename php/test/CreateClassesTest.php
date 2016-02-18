@@ -30,8 +30,8 @@ class CreateTypeTest extends Base
         $classCreator = new ClassCreator();
 
         $typeDefinition = new TypeDefinition();
-        $typeDefinition->addAttribute(AttributeDefinition::create('name')->setDataTypeVarchar());
-        $typeDefinition->addAttribute(AttributeDefinition::create('introductionDate')->setDataTypeDate());
+        $typeDefinition->addAttribute('name')->setDataTypeVarchar();
+        $typeDefinition->addAttribute('introductionDate')->setDataTypeDate();
         $classCreator->createClasses(ProductPicket::class, $typeDefinition);
 
         // test if customer class has been created
@@ -46,8 +46,8 @@ class CreateTypeTest extends Base
         $classCreator = new ClassCreator();
 
         $typeDefinition = new TypeDefinition();
-        $typeDefinition->addAttribute(AttributeDefinition::create('name')->setDataTypeVarchar());
-        $typeDefinition->addAttribute(AttributeDefinition::create('introductionDate')->setDataTypeDate());
+        $typeDefinition->addAttribute('name')->setDataTypeVarchar();
+        $typeDefinition->addAttribute('introductionDate')->setDataTypeDate();
         $classCreator->createClasses(ProductPicket::class, $typeDefinition);
 
         $Class = new ReflectionClass(ProductType::class);
@@ -59,7 +59,7 @@ class CreateTypeTest extends Base
         $firstAttribute = reset($attributes);
         $firstAttributeId = $firstAttribute->getId();
 
-        $typeDefinition->addAttribute(AttributeDefinition::create('price')->setDataTypeInteger());
+        $typeDefinition->addAttribute('price')->setDataTypeInteger();
 
         $classCreator->createClasses(ProductPicket::class, $typeDefinition);
 

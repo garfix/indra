@@ -49,15 +49,14 @@ class Base extends PHPUnit_Framework_TestCase
     {
         $domain = new Domain();
         $typeModel = new TypeModel($domain);
-        $name = AttributeDefinition::create('name')->setDataTypeVarchar();
 
         $type = new TypeDefinition();
-        $type->addAttribute($name);
-        $type->addAttribute(AttributeDefinition::create('birthDate')->setDataTypeDate());
+        $type->addAttribute('name')->setDataTypeVarchar();
+        $type->addAttribute('birthDate')->setDataTypeDate();
         $typeModel->addType(CustomerPicket::class, $type, $domain);
 
         $type = new TypeDefinition();
-        $type->addAttribute($name);
+        $type->addAttribute('name')->setDataTypeVarchar();
         $typeModel->addType(SupplierPicket::class, $type, $domain);
     }
 
