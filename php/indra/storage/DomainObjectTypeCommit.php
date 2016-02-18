@@ -17,11 +17,12 @@ class DomainObjectTypeCommit
 
     private $diffItems = [];
 
-    public function __construct($branchId, $typeId, $commitIndex)
+    public function __construct($branchId, $typeId, $commitIndex, $diffItems)
     {
         $this->branchId = $branchId;
         $this->typeId = $typeId;
         $this->commitIndex = $commitIndex;
+        $this->diffItems = $diffItems;
     }
 
     /**
@@ -48,10 +49,10 @@ class DomainObjectTypeCommit
         return $this->commitIndex;
     }
 
-    public function addDiffItem(DiffItem $diffItem)
-    {
-        $this->diffItems[] = $diffItem;
-    }
+//    public function addDiffItem(DiffItem $diffItem)
+//    {
+//        $this->diffItems[] = $diffItem;
+//    }
 
     public function getDiffItems()
     {

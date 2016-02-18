@@ -218,6 +218,7 @@ class Domain
         } elseif ($tripleStore->getNumberOfBranchesUsingView($branchView) > 1) {
             $newBranchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
             $tripleStore->cloneBranchView($newBranchView, $branchView);
+            $branchView = $newBranchView;
         }
 
         foreach ($diffItems as $diffItem) {
@@ -229,54 +230,224 @@ class Domain
      * @param Branch $source
      * @param Branch $target
      */
-    public function mergeBranch(Branch $source, Branch $target)
+    public function mergeBranch(Branch $source, Branch $target, $commitDescription)
     {
         $tripleStore = Context::getTripleStore();
 
-        // find all revisions of $branch after the common revision
-        $revisionIds = $this->findMergeableRevisions($target, $source);
+        // Special case: no source = target
+        if ($source->getBranchId() == $target->getBranchId()) {
+            return null;
+        }
 
-        // apply these revisions to the other branch
-        $mergeRevision = new Revision(Context::getIdGenerator()->generateId());
-        $mergeRevision->setSourceRevision($target->getActiveRevision());
-        $target->setActiveRevision($mergeRevision);
-        $tripleStore->mergeRevisions($source, $target, $mergeRevision, $revisionIds);
+        $target->increaseCommitIndex();
+
+        $dateTime = Context::getDateTimeGenerator()->getDateTime();
+        $userName = Context::getUserNameProvider()->getUserName();
+
+        // create a new commit
+        $mergeCommit = new Commit($target->getBranchId(), $target->getCommitIndex(), $commitDescription, $userName, $dateTime->format('Y-m-d H:i:s'));
+
+        // store the commit
+        $tripleStore->storeCommit($mergeCommit);
+
+        // store the branch
         $tripleStore->saveBranch($target);
+
+        $sourceCommits = $this->findMergeableCommits($target, $source);
+
+        foreach ($sourceCommits as $sourceCommit) {
+            foreach ($tripleStore->getDomainObjectTypeCommits($sourceCommit) as $dotCommit) {
+
+                // update the branch view
+                $branchView = $tripleStore->getBranchView($target->getBranchId(), $dotCommit->getTypeId());
+                foreach ($dotCommit->getDiffItems() as $diffItem) {
+                    $tripleStore->processDiffItem($branchView, $diffItem);
+                }
+
+                // add the diffs of the commit
+                $newDotCommit = new DomainObjectTypeCommit($target->getBranchId(), $dotCommit->getTypeId(), $mergeCommit->getCommitIndex(), $dotCommit->getDiffItems());
+                $tripleStore->storeDomainObjectTypeCommit($newDotCommit);
+            }
+        }
+
+        return $mergeCommit;
+
+//        // find all revisions of $branch after the common revision
+//        $revisionIds = $this->findMergeableRevisions($target, $source);
+//
+//        // apply these revisions to the other branch
+//        $mergeRevision = new Revision(Context::getIdGenerator()->generateId());
+//        $mergeRevision->setSourceRevision($target->getActiveRevision());
+//        $target->setActiveRevision($mergeRevision);
+//        $tripleStore->mergeRevisions($source, $target, $mergeRevision, $revisionIds);
+//        $tripleStore->saveBranch($target);
+
+
+
     }
 
-    private function findMergeableRevisions(Branch $branch1, Branch $branch2)
+    /**
+     * @param Branch $target
+     * @param Branch $source
+     * @return Commit[]
+     * @throws \Exception
+     */
+    private function findMergeableCommits(Branch $target, Branch $source)
     {
         $tripleStore = Context::getTripleStore();
 
-        $branch1Revisions = [];
-        $branch2Revisions = [];
+        /** @var Branch[] $parentBranches */
+        list($parentBranches, $finalCommitId) = $this->findMergeableBranchList($target, $source);
 
-        $branch1RevisionId = $branch1->getActiveRevision()->getId();
-        $branch2RevisionId = $branch2->getActiveRevision()->getId();
+        $commits = [];
 
-        do {
+        $lastCommitIndex = $parentBranches[0]->getCommitIndex();
+        $lastBranchIndex = (count($parentBranches) - 1);
 
-            $branch1Revisions[] = $branch1RevisionId;
-            $branch2Revisions[] = $branch2RevisionId;
+        foreach ($parentBranches as $p => $parentBranch) {
 
-            $branch1Source = $tripleStore->getSourceRevisionId($branch1RevisionId);
-            $branch2Source = $tripleStore->getSourceRevisionId($branch2RevisionId);
+            $isLastBranch = ($p == $lastBranchIndex);
 
-            // common revision found!
-            if (in_array($branch2Source, $branch1Revisions)) {
-                break;
-            }
-            if (in_array($branch1Source, $branch2Revisions)) {
-                break;
+            if ($isLastBranch) {
+                // the final commit itself should not be reached
+                $firstCommitIndex = $finalCommitId + 1;
+            } else {
+                $firstCommitIndex = 1;
             }
 
-            $branch1RevisionId = $branch1Source;
-            $branch2RevisionId = $branch2Source;
+            for ($i = $lastCommitIndex; $i >= $firstCommitIndex; $i--) {
+                $commits[] = $tripleStore->getCommit($parentBranch->getBranchId(), $i);
+            }
 
-        } while ($branch1RevisionId != BaseRevision::ID);
+            $lastCommitIndex = $parentBranch->getMotherCommitIndex();
+        }
 
-        return array_reverse($branch2Revisions);
+        $commits = array_reverse($commits);
+
+        return $commits;
     }
+
+    /**
+     * @param Branch $target
+     * @param Branch $source
+     * @return [Branch[], int]
+     * @throws \Exception
+     */
+    private function findMergeableBranchList(Branch $target, Branch $source)
+    {
+        $tripleStore = Context::getTripleStore();
+
+        /** @var Branch[] $sourceParents */
+        $sourceParents = [$source];
+        /** @var Branch[] $targetParents */
+        $targetParents = [$target];
+
+        $sourceParentIds = [$source->getBranchId()];
+        $targetParentIds = [$target->getBranchId()];
+
+        while ($target->getMotherBranchId() || $source->getMotherBranchId()) {
+
+            // repeat until both the source route and the target route have reached a common branch
+            if (in_array($source->getBranchId(), $targetParentIds) && in_array($target->getBranchId(), $sourceParentIds)) {
+                break;
+            }
+
+            // take the next branches up
+            if ($target->getMotherBranchId()) {
+                $target = $tripleStore->loadBranch($target->getMotherBranchId());
+                $targetParents[] = $target;
+                $targetParentIds[] = $target->getBranchId();
+            }
+
+            if ($source->getMotherBranchId()) {
+                $source = $tripleStore->loadBranch($source->getMotherBranchId());
+                $sourceParents[] = $source;
+                $sourceParentIds[] = $source->getBranchId();
+            }
+        }
+
+        $finalSourceCommitId = null;
+        $finalTargetCommitId = null;
+
+        $check1 = false;
+        $check2 = false;
+
+        // go up the source path until the target path is reached, and collect the branches
+        $mergeableBranchList = [];
+        foreach ($sourceParents as $sourceParent) {
+
+            // collect
+            $mergeableBranchList[] = $sourceParent;
+
+            // has the source path reached the target path?
+            if (in_array($sourceParent->getBranchId(), $targetParentIds)) {
+                $check1 = true;
+                break;
+            } else {
+                // no: move the final commit up
+                $finalSourceCommitId = $sourceParent->getMotherCommitIndex();
+            }
+        }
+
+        $finalTargetCommitId = null;
+        foreach ($targetParents as $targetParent) {
+            // has the target path reached the source path?
+            if (in_array($targetParent->getBranchId(), $sourceParentIds)) {
+                $check2 = true;
+                break;
+            } else {
+                // no: move the final commit up
+                $finalTargetCommitId = $targetParent->getMotherCommitIndex();
+            }
+        }
+
+        if (!$check1 || !$check2) {
+            throw new \Exception('Check failed');
+        }
+
+        // the merge should go up to the first commit where the paths split
+        if ($finalTargetCommitId !== null) {
+            $finalCommitId = min($finalSourceCommitId, $finalTargetCommitId);
+        } else {
+            $finalCommitId = $finalSourceCommitId;
+        }
+
+        return [$mergeableBranchList, $finalCommitId];
+    }
+
+//    private function findMergeableRevisions(Branch $branch1, Branch $branch2)
+//    {
+//        $tripleStore = Context::getTripleStore();
+//
+//        $branch1Revisions = [];
+//        $branch2Revisions = [];
+//
+//        $branch1RevisionId = $branch1->getActiveRevision()->getId();
+//        $branch2RevisionId = $branch2->getActiveRevision()->getId();
+//
+//        do {
+//
+//            $branch1Revisions[] = $branch1RevisionId;
+//            $branch2Revisions[] = $branch2RevisionId;
+//
+//            $branch1Source = $tripleStore->getSourceRevisionId($branch1RevisionId);
+//            $branch2Source = $tripleStore->getSourceRevisionId($branch2RevisionId);
+//
+//            // common revision found!
+//            if (in_array($branch2Source, $branch1Revisions)) {
+//                break;
+//            }
+//            if (in_array($branch1Source, $branch2Revisions)) {
+//                break;
+//            }
+//
+//            $branch1RevisionId = $branch1Source;
+//            $branch2RevisionId = $branch2Source;
+//
+//        } while ($branch1RevisionId != BaseRevision::ID);
+//
+//        return array_reverse($branch2Revisions);
+//    }
 
     /**
      * Undoes all actions of $revision.
@@ -294,5 +465,54 @@ class Domain
         $tripleStore->revertRevision($this->getActiveBranch(), $revision, $undoRevision);
 
         return $undoRevision;
+    }
+
+    /**
+     * Undoes all diffs of $commit
+     *
+     * @param Commit $commit
+     * @return Commit The undo commit
+     */
+    public function revertCommit(Commit $commit)
+    {
+        $tripleStore = Context::getTripleStore();
+
+        $branch = Context::getTripleStore()->loadBranch($commit->getBranchId());
+        $branch->increaseCommitIndex();
+
+        $diffService = new DiffService();
+
+        $reason = sprintf("Undo commit %s (%s)", $commit->getCommitIndex(), $commit->getReason());
+        $userName = Context::getUserNameProvider()->getUserName();
+        $dateTime = Context::getDateTimeGenerator()->getDateTime();
+
+        $undoCommit = new Commit($branch->getBranchId(), $branch->getCommitIndex(), $reason, $userName, $dateTime->format('Y-m-d H:i:s'), null, null);
+        $tripleStore->storeCommit($undoCommit);
+
+        // store the branch
+        $tripleStore->saveBranch($branch);
+
+        foreach ($tripleStore->getDomainObjectTypeCommits($commit) as $domainObjectTypeCommit) {
+
+            $typeId = $domainObjectTypeCommit->getTypeId();
+
+            $reversedDiffItems = [];
+
+            foreach (array_reverse($domainObjectTypeCommit->getDiffItems()) as $diffItem) {
+                $reversedDiffItems[] = $diffService->getReverseDiffItem($diffItem);
+            }
+
+            $dotCommit = new DomainObjectTypeCommit($commit->getBranchId(), $typeId, $branch->getCommitIndex(), $reversedDiffItems);
+
+            $tripleStore->storeDomainObjectTypeCommit($dotCommit);
+
+            $branchView = $tripleStore->getBranchView($branch->getBranchId(), $domainObjectTypeCommit->getTypeId());
+
+            foreach ($reversedDiffItems as $diffItem) {
+                $tripleStore->processDiffItem($branchView, $diffItem);
+            }
+        }
+
+        return $undoCommit;
     }
 }

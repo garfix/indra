@@ -7,13 +7,12 @@ use indra\diff\DiffItem;
 use indra\diff\ObjectAdded;
 use indra\exception\DataBaseException;
 use indra\exception\DiffItemClassNotRecognizedException;
-use indra\exception\ObjectCreationError;
 use indra\exception\ObjectNotFoundException;
 use indra\object\Attribute;
 use indra\object\DomainObject;
 use indra\object\Type;
 use indra\service\Context;
-use indra\service\DiffSerializer;
+use indra\service\DiffService;
 
 /**
  * @author Patrick van Bergen
@@ -464,7 +463,7 @@ class MySqlTripleStore implements TripleStore
             SELECT * FROM `" . $branchView->getTableName() . "`
             WHERE id = '" . $db->esc($objectId) . "'
         ");
-
+return $attributeValues;
 #todo: remove
         $attributeValues = [];
         $branchToken = ($branch->isMaster()) ? '' : 'branch_';
@@ -661,7 +660,7 @@ class MySqlTripleStore implements TripleStore
     {
         $db = Context::getDB();
 
-        $serializer = new DiffSerializer();
+        $serializer = new DiffService();
         $diff = $serializer->serializeDiffItems($dotCommit->getDiffItems());
 
         $db->execute("
@@ -672,6 +671,37 @@ class MySqlTripleStore implements TripleStore
                       `type_id` = '" . $dotCommit->getTypeId() . "',
                       `diff` = '" . $diff . "'
         ");
+    }
+
+    /**
+     * @param Commit $commit
+     * @return DomainObjectTypeCommit[]
+     * @throws DataBaseException
+     * @throws DiffItemClassNotRecognizedException
+     */
+    public function getDomainObjectTypeCommits(Commit $commit)
+    {
+        $db = Context::getDB();
+
+        $rows = $db->queryMultipleRows("
+            SELECT type_id, diff
+            FROM indra_commit_type
+            WHERE branch_id = '" . $commit->getBranchId() . "' AND commit_index = '" . $commit->getCommitIndex() . "'
+        ");
+
+        $serializer = new DiffService();
+
+        $dotCommits = [];
+
+        foreach ($rows as $row) {
+
+            $diffItems = $serializer->deserializeDiffItems($row['diff']);
+            $dotCommit = new DomainObjectTypeCommit($commit->getBranchId(), $row['type_id'], $commit->getCommitIndex(), $diffItems);
+
+            $dotCommits[] = $dotCommit;
+        }
+
+        return $dotCommits;
     }
 
     public function getNumberOfBranchesUsingView(BranchView $branchView)
@@ -832,5 +862,21 @@ class MySqlTripleStore implements TripleStore
             FROM indra_branch_view
             WHERE branch_id = '" . $db->esc($branch->getMotherBranchId()) . "'
         ");
+    }
+
+    public function getCommit($branchId, $commitIndex)
+    {
+        $db = Context::getDB();
+
+        $data = $db->querySingleRow("
+            SELECT * FROM`indra_commit`
+              WHERE
+                  `branch_id` = '" . $branchId . "' AND
+                  `commit_index` = '" . $commitIndex . "'
+        ");
+
+        $commit = new Commit($branchId, $commitIndex, $data['reason'], $data['username'], $data['datetime'], $data['merge_branch_id'], $data['merge_commit_index']);
+
+        return $commit;
     }
 }

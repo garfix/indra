@@ -35,3 +35,5 @@ De verschillende verantwoordelijkheden van Domain opsplitsen. Denk na of het mog
 - is het mogelijk om de code-generatie te schedulen: om 2:00 's-nachts worden de nieuwe tabellen gemaakt
 - snapshotting is alleen bedoelt voor debugging, daarom mag het wat trager zijn
 - het idee dat een attribuut bij meerdere types mag horen is niet meer haalbaar (de vraag is ook of het een goed idee is)
+- het centrale idee van de snapshots is dat je niet alle data hoeft te instantieren voor een pagina die je bekijkt. enkele tabellen volstaan (tijd beperkt)
+- hoelang duurt het om een redelijke grote tabel te kopiëren?

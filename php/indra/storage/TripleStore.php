@@ -81,4 +81,11 @@ interface TripleStore
     public function processDiffItem(BranchView $branchView, DiffItem $diffItem);
 
     public function createBranch(Branch $branch);
+
+    /**
+     * @param string $branchId
+     * @param int $commitIndex
+     * @return Commit
+     */
+    public function getCommit($branchId, $commitIndex);
 }

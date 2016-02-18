@@ -37,7 +37,9 @@ class RevisionTest extends Base
         list($revision, $commit) = $domain->commit('Dr. Jones renamed to Dr. Who');
 
         // revert change
-        $undoRevision = $domain->revertRevision($revision);
+#        $undoRevision = $domain->revertRevision($revision);
+
+        $undoCommit = $domain->revertCommit($commit);
 
         // test revert
         $customer2 = $customerModel->loadCustomer($id);
@@ -45,7 +47,9 @@ class RevisionTest extends Base
         $this->assertEquals('Dr. Jones', $name);
 
         // revert the revert
-        $domain->revertRevision($undoRevision);
+#        $domain->revertRevision($undoRevision);
+
+        $domain->revertCommit($undoCommit);
 
         // test revert revert
         $customer3 = $customerModel->loadCustomer($id);

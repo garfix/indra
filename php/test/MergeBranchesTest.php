@@ -32,16 +32,20 @@ class MergeBranchesTest extends Base
         list($revision, $commit) = $domain->commit('Add customer Dr. Jones');
 
         // start new branch and change customer
-$customer = $customerModel->loadCustomer($customerId);
+#var_dump("XXX start new branch and change customer");
+
+#$customer = $customerModel->loadCustomer($customerId);
         $branch = $domain->startNewBranch($commit);
         #todo: set current rev to basic rev
 
-#        $customer = $customerModel->loadCustomer($customerId);
+        $customer = $customerModel->loadCustomer($customerId);
         $customer->setName('Dr. Who');
         $customerModel->saveCustomer($customer);
         $domain->commit('Change customer name to Dr. Who');
 
         $master = $domain->getMasterBranch();
+
+#var_dump("XXX change in master branch");
 
         // change in master branch
         $domain->startBranch($master);
@@ -49,6 +53,8 @@ $customer = $customerModel->loadCustomer($customerId);
         $customer->setBirthDate('1971-09-23');
         $customerModel->saveCustomer($customer);
         $domain->commit('Change birth date to 1971-09-23');
+
+#var_dump("XXX test");
 
         // test that the two objects have separated
         $customer2 = $customerModel->loadCustomer($customerId);
@@ -61,7 +67,7 @@ $customer = $customerModel->loadCustomer($customerId);
         $this->assertEquals('1969-11-24', $customer3->getBirthDate());
 
         // merge new branch to master
-        $domain->mergeBranch($branch, $master);
+        $domain->mergeBranch($branch, $master, "Merge");
 
 # bij het wegschrijven naar de nieuwe branch worden ook de niet veranderde attributen opnieuw weggeschreven
 # maar dat is hier niet alleen het probleem
