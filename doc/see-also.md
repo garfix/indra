@@ -3,3 +3,7 @@
 - http://www.liquibase.org/
 - https://exversiondata.wordpress.com/2013/08/27/version-control-for-data/
 
+- http://blog.okfn.org/2013/07/02/git-and-github-for-data/
+
+- https://ocharles.org.uk/blog/posts/2011-07-28-git-in-pg.html
+- http://stackoverflow.com/questions/10555670/are-there-any-databases-that-support-branches

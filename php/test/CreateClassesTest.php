@@ -1,6 +1,5 @@
 <?php
 
-use indra\definition\AttributeDefinition;
 use indra\definition\TypeDefinition;
 use indra\service\ClassCreator;
 use indra\service\Context;

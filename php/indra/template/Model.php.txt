@@ -3,7 +3,6 @@
 namespace {{ namespace }};
 
 use indra\service\Context;
-use indra\object\DomainObject;
 use indra\object\Model;
 use indra\exception\ObjectCreationError;
 use indra\exception\ObjectNotFoundException;
@@ -20,13 +19,6 @@ class {{ className }} extends Model
     {
         $type = $this->getType();
         $object = new {{ typeName }}($type, Context::getIdGenerator()->generateId(), []);
-        return $object;
-    }
-
-    public function create{{ typeName }}From(DomainObject $existingObject)
-    {
-        $type = $this->getType();
-        $object = new {{ typeName }}($type, $existingObject->getId(), $existingObject->getAttributeValues());
         return $object;
     }
 
