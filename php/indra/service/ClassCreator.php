@@ -89,7 +89,6 @@ class ClassCreator
             $template = file_get_contents(__DIR__ . '/../template/' . $fileName . '.php.txt');
 
             $className = $classNameBase . $item;
-            $tableName = 'indra_view_' . $typeId;
 
             $replacements = [
                 '{{ namespace }}' => $namespace,
@@ -99,7 +98,6 @@ class ClassCreator
                 '{{ attributes }}' => $attributes,
                 '{{ typeAttributes }}' => $typeAttributes,
                 '{{ tableViewColumns }}' => $tableViewColumns,
-                '{{ tableName }}' => $tableName,
                 '{{ tableClassName }}' => $classNameBase . "Table",
                 '{{ typeClassName }}' => $classNameBase . "Type",
             ];

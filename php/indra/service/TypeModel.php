@@ -24,7 +24,7 @@ class TypeModel
         /** @var Object $object */
         $object = $model->$methodName();
         $type = $object->getType();
-
+return;
         $viewStore = $domain->getViewStore();
         $viewStore->createView($type);
     }

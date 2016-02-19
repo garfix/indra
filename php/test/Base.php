@@ -20,6 +20,7 @@ class Base extends PHPUnit_Framework_TestCase
     const REMOVE_GENERATED_CLASSES = true;
 
     private static $initialized = false;
+    private static $classesCreated = false;
 
     public static function initialize()
     {
@@ -47,17 +48,22 @@ class Base extends PHPUnit_Framework_TestCase
 
     protected static function createCustomerType()
     {
-        $domain = new Domain();
-        $typeModel = new TypeModel($domain);
+        if (!self::$classesCreated) {
 
-        $type = new TypeDefinition();
-        $type->addAttribute('name')->setDataTypeVarchar();
-        $type->addAttribute('birthDate')->setDataTypeDate();
-        $typeModel->addType(CustomerPicket::class, $type, $domain);
+            $domain = new Domain();
+            $typeModel = new TypeModel($domain);
 
-        $type = new TypeDefinition();
-        $type->addAttribute('name')->setDataTypeVarchar();
-        $typeModel->addType(SupplierPicket::class, $type, $domain);
+            $type = new TypeDefinition();
+            $type->addAttribute('name')->setDataTypeVarchar();
+            $type->addAttribute('birthDate')->setDataTypeDate();
+            $typeModel->addType(CustomerPicket::class, $type, $domain);
+
+            $type = new TypeDefinition();
+            $type->addAttribute('name')->setDataTypeVarchar();
+            $typeModel->addType(SupplierPicket::class, $type, $domain);
+
+            self::$classesCreated = true;
+        }
     }
 
     public function setUp()

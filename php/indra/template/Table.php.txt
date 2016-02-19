@@ -10,8 +10,4 @@ use indra\storage\TableView;
 class {{ className }} extends TableView
 {
 {{ tableViewColumns }}
-    public static function getTableName()
-    {
-        return '{{ tableName }}';
-    }
 }

@@ -31,7 +31,7 @@ class ViewTest extends Base
         // check if table (view) exists and if one row has been added
         $rows = Context::getDB()->queryMultipleRows("
             SELECT " . CustomerTable::NAME .  "
-            FROM " . CustomerTable::getTableName() . "
+            FROM " . $model->getCustomerTable() . "
         ");
 
         $this->assertEquals(1, count($rows));

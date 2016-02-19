@@ -53,6 +53,11 @@ class {{ className }} extends Model
         Context::getTripleStore()->remove($object, $this->domain->getActiveBranch());
     }
 
+    public function get{{ typeName }}Table()
+    {
+        return Context::getTripleStore()->getBranchView($this->domain->getActiveBranch()->getBranchId(), $this->getType()->getId())->getTableName();
+    }
+
     private $type;
 
 #todo: this function should be generated inside Object.php.txt and not injected in Object

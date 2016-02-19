@@ -137,8 +137,6 @@ class MySqlTripleStore implements TripleStore
                   `merge_branch_id` = '" . $commit->getMergeBranchId() . "',
                   `merge_commit_index` = '" . $commit->getMergeCommitIndex() . "'
         ");
-
-        // $branchId, $commitIndex, $description, $userName, $dateTime, $mergeBranchId = null, $mergeBranchIndex = null
     }
 
     public function saveBranch(Branch $branch)

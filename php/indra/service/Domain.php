@@ -109,11 +109,6 @@ class Domain
         // store the branch
         $tripleStore->saveBranch($branch);
 
-        // add the changes to the revision
-        foreach ($this->saveList as $object) {
-            $this->getViewStore()->updateView($object);
-        }
-
         $this->storeDiffs($branch, $branch->getCommitIndex());
 
         foreach ($this->saveList as $object) {
@@ -190,7 +185,6 @@ class Domain
     /**
      * @param Branch $source
      * @param Branch $target
-     * @return Commit
      */
     public function mergeBranch(Branch $source, Branch $target, $commitDescription)
     {
