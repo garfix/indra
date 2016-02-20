@@ -60,10 +60,14 @@ When a source branch is merged into a target branch, the library searches the la
 
 An activate application may choose to use any previous version of the data (any commit) to be used in stead of the latest version of the data.
  When such an application requests the use of a table, the library will create a snapshot of the table populated with the data as it was at the time of the requested commit.
- A clone is made to each table used, and all diffs from that commit until the latest commit in the branch are executed (replayed) on that snapshot.
+ A clone is made of each table used, and all diffs from that commit until the latest commit in the branch are executed (replayed) on that snapshot.
  This means that only those snapshots are created that are actually needed on the requested page. This will usually just be a small subset of all tables in the database.
  A snapshot will be stored as cache until it is removed (say, once a day, by a scheduled process).
- This keeps the database relatively clean.
+
+Any version control system providing checkout of previous versions will need to make a trade-off decision that involves both access time and data storage requirements. 
+This library decided for reasonable access times for most applications, while saving on storage requirements. The use case this library has for checkouts is the one for debugging.
+ At that time the user will be prepared to wait a few seconds for the snapshot, since the alternative is looking for a database backup.
+ This use case, however, does not permit large investments in database size. 
   
 ### View history
 
