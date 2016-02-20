@@ -16,7 +16,7 @@ use indra\service\DiffService;
 /**
  * @author Patrick van Bergen
  */
-class MySqlTripleStore implements TripleStore
+class MySqlPersistenceStore implements PersistenceStore
 {
     /** @const 22 characters */
     const ATTRIBUTE_TYPE_ID = 'type------------------';

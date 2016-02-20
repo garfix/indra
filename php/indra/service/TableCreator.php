@@ -12,6 +12,6 @@ class TableCreator
      */
     public function createBasicTables()
     {
-        Context::getTripleStore()->createBasicTables();
+        Context::getPersistenceStore()->createBasicTables();
     }
 }

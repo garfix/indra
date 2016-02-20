@@ -7,9 +7,9 @@ use indra\exception\DataBaseException;
 use indra\storage\DateTimeGenerator;
 use indra\storage\DB;
 use indra\storage\IdGenerator;
-use indra\storage\MySqlTripleStore;
+use indra\storage\MySqlPersistenceStore;
 use indra\storage\RandomIdGenerator;
-use indra\storage\TripleStore;
+use indra\storage\PersistenceStore;
 use indra\storage\UserNameProvider;
 use mysqli;
 
@@ -34,8 +34,8 @@ class Context
     /** @var bool  */
     private static $testMode = false;
 
-    /** @var  TripleStore */
-    private static $tripleStore;
+    /** @var  PersistenceStore */
+    private static $persistenceStore;
 
     /** @var  IdGenerator */
     private static $idGenerator;
@@ -51,7 +51,7 @@ class Context
      */
     public function resetAllServices()
     {
-        self::$tripleStore = null;
+        self::$persistenceStore = null;
         self::$mysqli = null;
         self::$idGenerator = null;
         self::$dateTimeGenerator = null;
@@ -165,18 +165,18 @@ class Context
     }
 
     /**
-     * @param TripleStore $tripleStore
+     * @param PersistenceStore $persistenceStore
      */
-    public static function setTripleStore(TripleStore $tripleStore)
+    public static function setPersistenceStore(PersistenceStore $persistenceStore)
     {
-        self::$tripleStore = $tripleStore;
+        self::$persistenceStore = $persistenceStore;
     }
 
     /**
-     * @return MySqlTripleStore|TripleStore
+     * @return MySqlPersistenceStore|PersistenceStore
      */
-    public static function getTripleStore()
+    public static function getPersistenceStore()
     {
-        return self::$tripleStore ?: self::$tripleStore = new MySqlTripleStore();
+        return self::$persistenceStore ?: self::$persistenceStore = new MySqlPersistenceStore();
     }
 }

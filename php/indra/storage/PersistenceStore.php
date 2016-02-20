@@ -7,12 +7,10 @@ use indra\exception\DataBaseException;
 use indra\object\DomainObject;
 use indra\object\Type;
 
-#todo: dit is geen triplestore meer & de klasse heeft te veel verantwoordelijkheden
-
 /**
  * @author Patrick van Bergen
  */
-interface TripleStore
+interface PersistenceStore
 {
     /**
      * @return void

@@ -31,7 +31,7 @@ class Domain
 
         $this->activeBranch = new Branch(Context::getIdGenerator()->generateId(), $existingBranch->getBranchId(), $existingBranch->getCommitIndex());
 
-        Context::getTripleStore()->createBranch($this->activeBranch);
+        Context::getPersistenceStore()->createBranch($this->activeBranch);
 
         return $this->activeBranch;
     }
@@ -50,16 +50,16 @@ class Domain
      */
     public function getBranchById($branchId)
     {
-        $tripleStore = Context::getTripleStore();
+        $persistenceStore = Context::getPersistenceStore();
 
-        return $tripleStore->loadBranch($branchId);
+        return $persistenceStore->loadBranch($branchId);
     }
 
     public function getMasterBranch()
     {
-        $tripleStore = Context::getTripleStore();
+        $persistenceStore = Context::getPersistenceStore();
 
-        $branch = $tripleStore->loadBranch(Branch::MASTER);
+        $branch = $persistenceStore->loadBranch(Branch::MASTER);
 
         if (!$branch) {
             $branch = new Branch(Branch::MASTER, null, null);
@@ -83,7 +83,7 @@ class Domain
 
     public function commit($commitDescription)
     {
-        $tripleStore = Context::getTripleStore();
+        $persistenceStore = Context::getPersistenceStore();
         $branch = $this->getActiveBranch();
 
         $branch->increaseCommitIndex();
@@ -95,10 +95,10 @@ class Domain
         $commit = new Commit($branch->getBranchId(), $branch->getCommitIndex(), $commitDescription, $userName, $dateTime->format('Y-m-d H:i:s'));
 
         // store the commit
-        $tripleStore->storeCommit($commit);
+        $persistenceStore->storeCommit($commit);
 
         // store the branch
-        $tripleStore->saveBranch($branch);
+        $persistenceStore->saveBranch($branch);
 
         $this->storeDiffs($branch, $branch->getCommitIndex());
 
@@ -113,7 +113,7 @@ class Domain
 
     private function storeDiffs(Branch $branch, $commitIndex)
     {
-        $tripleStore = Context::getTripleStore();
+        $persistenceStore = Context::getPersistenceStore();
         $branchId = $branch->getBranchId();
 
 #todo this must be much improved
@@ -146,7 +146,7 @@ class Domain
 
             $dotCommit = new DomainObjectTypeCommit($branchId, $typeId, $commitIndex, $diffItems);
 
-            $tripleStore->storeDomainObjectTypeCommit($dotCommit);
+            $persistenceStore->storeDomainObjectTypeCommit($dotCommit);
 
             $this->updateBranchView($branch, $types[$typeId], $diffItems);
         }
@@ -154,22 +154,22 @@ class Domain
 
     private function updateBranchView(Branch $branch, Type $type, array $diffItems)
     {
-        $tripleStore = Context::getTripleStore();
+        $persistenceStore = Context::getPersistenceStore();
 
-        $branchView = $tripleStore->getBranchView($branch->getBranchId(), $type->getId());
+        $branchView = $persistenceStore->getBranchView($branch->getBranchId(), $type->getId());
 
         // if this branch has no view, or if it is used by other branches as well, create a new view
         if (!$branchView) {
             $branchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
-            $tripleStore->storeBranchView($branchView, $type);
-        } elseif ($tripleStore->getNumberOfBranchesUsingView($branchView) > 1) {
+            $persistenceStore->storeBranchView($branchView, $type);
+        } elseif ($persistenceStore->getNumberOfBranchesUsingView($branchView) > 1) {
             $newBranchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
-            $tripleStore->cloneBranchView($newBranchView, $branchView);
+            $persistenceStore->cloneBranchView($newBranchView, $branchView);
             $branchView = $newBranchView;
         }
 
         foreach ($diffItems as $diffItem) {
-            $tripleStore->processDiffItem($branchView, $diffItem);
+            $persistenceStore->processDiffItem($branchView, $diffItem);
         }
     }
 
@@ -180,7 +180,7 @@ class Domain
      */
     public function mergeBranch(Branch $source, $commitDescription)
     {
-        $tripleStore = Context::getTripleStore();
+        $persistenceStore = Context::getPersistenceStore();
 
         $target = $this->getActiveBranch();
 
@@ -198,25 +198,25 @@ class Domain
         $mergeCommit = new Commit($target->getBranchId(), $target->getCommitIndex(), $commitDescription, $userName, $dateTime->format('Y-m-d H:i:s'));
 
         // store the commit
-        $tripleStore->storeCommit($mergeCommit);
+        $persistenceStore->storeCommit($mergeCommit);
 
         // store the branch
-        $tripleStore->saveBranch($target);
+        $persistenceStore->saveBranch($target);
 
         $sourceCommits = $this->findMergeableCommits($target, $source);
 
         foreach ($sourceCommits as $sourceCommit) {
-            foreach ($tripleStore->getDomainObjectTypeCommits($sourceCommit) as $dotCommit) {
+            foreach ($persistenceStore->getDomainObjectTypeCommits($sourceCommit) as $dotCommit) {
 
                 // update the branch view
-                $branchView = $tripleStore->getBranchView($target->getBranchId(), $dotCommit->getTypeId());
+                $branchView = $persistenceStore->getBranchView($target->getBranchId(), $dotCommit->getTypeId());
                 foreach ($dotCommit->getDiffItems() as $diffItem) {
-                    $tripleStore->processDiffItem($branchView, $diffItem);
+                    $persistenceStore->processDiffItem($branchView, $diffItem);
                 }
 
                 // add the diffs of the commit
                 $newDotCommit = new DomainObjectTypeCommit($target->getBranchId(), $dotCommit->getTypeId(), $mergeCommit->getCommitIndex(), $dotCommit->getDiffItems());
-                $tripleStore->storeDomainObjectTypeCommit($newDotCommit);
+                $persistenceStore->storeDomainObjectTypeCommit($newDotCommit);
             }
         }
 
@@ -231,7 +231,7 @@ class Domain
      */
     private function findMergeableCommits(Branch $target, Branch $source)
     {
-        $tripleStore = Context::getTripleStore();
+        $persistenceStore = Context::getPersistenceStore();
 
         /** @var Branch[] $parentBranches */
         list($parentBranches, $finalCommitId) = $this->findMergeableBranchList($target, $source);
@@ -253,7 +253,7 @@ class Domain
             }
 
             for ($i = $lastCommitIndex; $i >= $firstCommitIndex; $i--) {
-                $commits[] = $tripleStore->getCommit($parentBranch->getBranchId(), $i);
+                $commits[] = $persistenceStore->getCommit($parentBranch->getBranchId(), $i);
             }
 
             $lastCommitIndex = $parentBranch->getMotherCommitIndex();
@@ -272,7 +272,7 @@ class Domain
      */
     private function findMergeableBranchList(Branch $target, Branch $source)
     {
-        $tripleStore = Context::getTripleStore();
+        $persistenceStore = Context::getPersistenceStore();
 
         /** @var Branch[] $sourceParents */
         $sourceParents = [$source];
@@ -291,13 +291,13 @@ class Domain
 
             // take the next branches up
             if ($target->getMotherBranchId()) {
-                $target = $tripleStore->loadBranch($target->getMotherBranchId());
+                $target = $persistenceStore->loadBranch($target->getMotherBranchId());
                 $targetParents[] = $target;
                 $targetParentIds[] = $target->getBranchId();
             }
 
             if ($source->getMotherBranchId()) {
-                $source = $tripleStore->loadBranch($source->getMotherBranchId());
+                $source = $persistenceStore->loadBranch($source->getMotherBranchId());
                 $sourceParents[] = $source;
                 $sourceParentIds[] = $source->getBranchId();
             }
@@ -360,9 +360,9 @@ class Domain
      */
     public function revertCommit(Commit $commit)
     {
-        $tripleStore = Context::getTripleStore();
+        $persistenceStore = Context::getPersistenceStore();
 
-        $branch = Context::getTripleStore()->loadBranch($commit->getBranchId());
+        $branch = Context::getPersistenceStore()->loadBranch($commit->getBranchId());
         $branch->increaseCommitIndex();
 
         $diffService = new DiffService();
@@ -372,12 +372,12 @@ class Domain
         $dateTime = Context::getDateTimeGenerator()->getDateTime();
 
         $undoCommit = new Commit($branch->getBranchId(), $branch->getCommitIndex(), $reason, $userName, $dateTime->format('Y-m-d H:i:s'), null, null);
-        $tripleStore->storeCommit($undoCommit);
+        $persistenceStore->storeCommit($undoCommit);
 
         // store the branch
-        $tripleStore->saveBranch($branch);
+        $persistenceStore->saveBranch($branch);
 
-        foreach ($tripleStore->getDomainObjectTypeCommits($commit) as $domainObjectTypeCommit) {
+        foreach ($persistenceStore->getDomainObjectTypeCommits($commit) as $domainObjectTypeCommit) {
 
             $typeId = $domainObjectTypeCommit->getTypeId();
 
@@ -389,12 +389,12 @@ class Domain
 
             $dotCommit = new DomainObjectTypeCommit($commit->getBranchId(), $typeId, $branch->getCommitIndex(), $reversedDiffItems);
 
-            $tripleStore->storeDomainObjectTypeCommit($dotCommit);
+            $persistenceStore->storeDomainObjectTypeCommit($dotCommit);
 
-            $branchView = $tripleStore->getBranchView($branch->getBranchId(), $domainObjectTypeCommit->getTypeId());
+            $branchView = $persistenceStore->getBranchView($branch->getBranchId(), $domainObjectTypeCommit->getTypeId());
 
             foreach ($reversedDiffItems as $diffItem) {
-                $tripleStore->processDiffItem($branchView, $diffItem);
+                $persistenceStore->processDiffItem($branchView, $diffItem);
             }
         }
 

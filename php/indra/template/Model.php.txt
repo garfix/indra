@@ -35,19 +35,19 @@ class {{ className }} extends Model
      */
     public function load{{ typeName }}($objectId)
     {
-        $attributes = Context::getTripleStore()->loadAttributes($this->getType(), $objectId, $this->domain->getActiveBranch());
+        $attributes = Context::getPersistenceStore()->loadAttributes($this->getType(), $objectId, $this->domain->getActiveBranch());
         $object = new {{ typeName }}($this->getType(), $objectId, $attributes);
         return $object;
     }
 
     public function remove{{ typeName }}({{ typeName }} $object)
     {
-        Context::getTripleStore()->remove($object, $this->domain->getActiveBranch());
+        Context::getPersistenceStore()->remove($object, $this->domain->getActiveBranch());
     }
 
     public function get{{ typeName }}Table()
     {
-        return Context::getTripleStore()->getBranchView($this->domain->getActiveBranch()->getBranchId(), $this->getType()->getId())->getTableName();
+        return Context::getPersistenceStore()->getBranchView($this->domain->getActiveBranch()->getBranchId(), $this->getType()->getId())->getTableName();
     }
 
     private $type;
