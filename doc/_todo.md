@@ -37,3 +37,4 @@ De verschillende verantwoordelijkheden van Domain opsplitsen. Denk na of het mog
 - het idee dat een attribuut bij meerdere types mag horen is niet meer haalbaar (de vraag is ook of het een goed idee is)
 - het centrale idee van de snapshots is dat je niet alle data hoeft te instantieren voor een pagina die je bekijkt. enkele tabellen volstaan (tijd beperkt)
 - hoelang duurt het om een redelijke grote tabel te kopiëren?
+- als je een vorige versie hebt uitgecheckt, mag je daarin niet schrijven, alleen lezen.
