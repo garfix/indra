@@ -1,10 +1,9 @@
 <?php
 
 use indra\definition\TypeDefinition;
+use indra\service\ClassCreator;
 use indra\service\Context;
-use indra\service\Domain;
 use indra\service\TableCreator;
-use indra\service\TypeModel;
 use my_module\customer\CustomerPicket;
 use my_module\supplier\SupplierPicket;
 
@@ -49,17 +48,16 @@ class Base extends PHPUnit_Framework_TestCase
     {
         if (!self::$classesCreated) {
 
-            $domain = new Domain();
-            $typeModel = new TypeModel($domain);
+            $classCreator = new ClassCreator();
 
             $type = new TypeDefinition();
             $type->addAttribute('name')->setDataTypeVarchar();
             $type->addAttribute('birthDate')->setDataTypeDate();
-            $typeModel->addType(CustomerPicket::class, $type, $domain);
+            $classCreator->createClasses(CustomerPicket::class, $type);
 
             $type = new TypeDefinition();
             $type->addAttribute('name')->setDataTypeVarchar();
-            $typeModel->addType(SupplierPicket::class, $type, $domain);
+            $classCreator->createClasses(SupplierPicket::class, $type);
 
             self::$classesCreated = true;
         }

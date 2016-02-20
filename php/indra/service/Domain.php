@@ -267,7 +267,7 @@ class Domain
     /**
      * @param Branch $target
      * @param Branch $source
-     * @return [Branch[], int]
+     * @return array [Branch[], int]
      * @throws \Exception
      */
     private function findMergeableBranchList(Branch $target, Branch $source)

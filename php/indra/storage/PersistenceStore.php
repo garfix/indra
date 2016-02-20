@@ -20,7 +20,7 @@ interface PersistenceStore
 
     /**
      * @param Type $type
-     * @param $objectId
+     * @param string $objectId
      * @param Branch $branch
      * @return
      */
@@ -38,18 +38,57 @@ interface PersistenceStore
      */
     public function storeCommit(Commit $commit);
 
+    /**
+     * @param DomainObjectTypeCommit $dotCommit
+     * @return void
+     * @throws DataBaseException
+     */
     public function storeDomainObjectTypeCommit(DomainObjectTypeCommit $dotCommit);
 
+    /**
+     * @param BranchView $branchView
+     * @return int
+     * @throws DataBaseException
+     */
     public function getNumberOfBranchesUsingView(BranchView $branchView);
 
+    /**
+     * @param string $branchId
+     * @param string $typeId
+     * @return BranchView
+     * @throws DataBaseException
+     */
     public function getBranchView($branchId, $typeId);
 
+    /**
+     * @param BranchView $branchView
+     * @param Type $type
+     * @return void
+     * @throws DataBaseException
+     */
     public function storeBranchView(BranchView $branchView, Type $type);
 
+    /**
+     * @param BranchView $newBranchView
+     * @param BranchView $oldBranchView
+     * @return void
+     * @throws DataBaseException
+     */
     public function cloneBranchView(BranchView $newBranchView, BranchView $oldBranchView);
 
+    /**
+     * @param BranchView $branchView
+     * @param DiffItem $diffItem
+     * @return void
+     * @throws DataBaseException
+     */
     public function processDiffItem(BranchView $branchView, DiffItem $diffItem);
 
+    /**
+     * @param Branch $branch
+     * @return void
+     * @throws DataBaseException
+     */
     public function createBranch(Branch $branch);
 
     /**

@@ -181,7 +181,14 @@ class MySqlPersistenceStore implements PersistenceStore
 
     public function loadAttributes(Type $type, $objectId, Branch $branch)
     {
-        $attributeValues = $this->getAttributeValues($type, $objectId, $branch);
+        $db = Context::getDB();
+
+        $branchView = $this->getBranchView($branch->getBranchId(), $type->getId());
+
+        $attributeValues = $db->querySingleRow("
+            SELECT * FROM `" . $branchView->getTableName() . "`
+            WHERE id = '" . $db->esc($objectId) . "'
+        ");
 
         if (empty($attributeValues)) {
             throw new ObjectNotFoundException();
@@ -202,20 +209,6 @@ class MySqlPersistenceStore implements PersistenceStore
             DELETE FROM `" . $branchView->getTableName() . "`
             WHERE id = '" . $db->esc($objectId) . "'
         ");
-    }
-
-    private function getAttributeValues(Type $type, $objectId, Branch $branch)
-    {
-        $db = Context::getDB();
-
-        $branchView = $this->getBranchView($branch->getBranchId(), $type->getId());
-
-        $attributeValues = $db->querySingleRow("
-            SELECT * FROM `" . $branchView->getTableName() . "`
-            WHERE id = '" . $db->esc($objectId) . "'
-        ");
-
-        return $attributeValues;
     }
 
     public function storeDomainObjectTypeCommit(DomainObjectTypeCommit $dotCommit)
