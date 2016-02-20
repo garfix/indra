@@ -32,7 +32,7 @@ class MergeBranchesTest extends Base
 
         // start new branch and change customer
 
-        $branch = $domain->startNewBranch($commit);
+        $branch = $domain->startNewBranch();
         $customer = $customerModel->loadCustomer($customerId);
         $customer->setName('Dr. Who');
         $customerModel->saveCustomer($customer);
@@ -52,7 +52,7 @@ class MergeBranchesTest extends Base
         $this->assertEquals('Dr. Jones', $customer2->getName());
         $this->assertEquals('1971-09-23', $customer2->getBirthDate());
 
-        $domain->startBranch($branch);
+        $domain->startBranchById($branch->getBranchId());
         $customer3 = $customerModel->loadCustomer($customerId);
         $this->assertEquals('Dr. Who', $customer3->getName());
         $this->assertEquals('1969-11-24', $customer3->getBirthDate());

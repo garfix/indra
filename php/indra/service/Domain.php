@@ -10,18 +10,12 @@ use indra\storage\Branch;
 use indra\storage\BranchView;
 use indra\storage\Commit;
 use indra\storage\DomainObjectTypeCommit;
-use indra\storage\MySqlViewStore;
-use indra\storage\ViewStore;
 
 /**
  * @author Patrick van Bergen
  */
 class Domain
 {
-
-    /** @var  ViewStore */
-    private $viewStore;
-
     /** @var Branch */
     private $activeBranch = null;
 
@@ -29,27 +23,13 @@ class Domain
     private $saveList = [];
 
     /**
-     * @param ViewStore $viewStore
-     */
-    public function setViewStore(ViewStore $viewStore)
-    {
-        $this->viewStore = $viewStore;
-    }
-
-    /**
-     * @return MySqlViewStore|ViewStore
-     */
-    public function getViewStore()
-    {
-        return $this->viewStore ?: $this->viewStore = new MySqlViewStore();
-    }
-
-    /**
      * @return Branch
      */
-    public function startNewBranch(Commit $motherCommit)
+    public function startNewBranch()
     {
-        $this->activeBranch = new Branch(Context::getIdGenerator()->generateId(), $motherCommit->getBranchId(), $motherCommit->getCommitIndex());
+        $existingBranch = $this->getActiveBranch();
+
+        $this->activeBranch = new Branch(Context::getIdGenerator()->generateId(), $existingBranch->getBranchId(), $existingBranch->getCommitIndex());
 
         Context::getTripleStore()->createBranch($this->activeBranch);
 
@@ -61,6 +41,16 @@ class Domain
      */
     public function startBranch(Branch $branch)
     {
+        $this->activeBranch = $branch;
+    }
+
+    /**
+     * @param string $branchId
+     */
+    public function startBranchById($branchId)
+    {
+        $branch = Context::getTripleStore()->loadBranch($branchId);
+
         $this->activeBranch = $branch;
     }
 
@@ -185,6 +175,7 @@ class Domain
     /**
      * @param Branch $source
      * @param Branch $target
+     * @return Commit
      */
     public function mergeBranch(Branch $source, Branch $target, $commitDescription)
     {
