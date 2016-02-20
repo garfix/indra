@@ -45,13 +45,14 @@ class Domain
     }
 
     /**
-     * @param string $branchId
+     * @param $branchId
+     * @return Branch|null
      */
-    public function startBranchById($branchId)
+    public function getBranchById($branchId)
     {
-        $branch = Context::getTripleStore()->loadBranch($branchId);
+        $tripleStore = Context::getTripleStore();
 
-        $this->activeBranch = $branch;
+        return $tripleStore->loadBranch($branchId);
     }
 
     public function getMasterBranch()
@@ -110,7 +111,7 @@ class Domain
         return $commit;
     }
 
-    public function storeDiffs(Branch $branch, $commitIndex)
+    private function storeDiffs(Branch $branch, $commitIndex)
     {
         $tripleStore = Context::getTripleStore();
         $branchId = $branch->getBranchId();
@@ -174,12 +175,14 @@ class Domain
 
     /**
      * @param Branch $source
-     * @param Branch $target
+     * @param $commitDescription
      * @return Commit
      */
-    public function mergeBranch(Branch $source, Branch $target, $commitDescription)
+    public function mergeBranch(Branch $source, $commitDescription)
     {
         $tripleStore = Context::getTripleStore();
+
+        $target = $this->getActiveBranch();
 
         // Special case: no source = target
         if ($source->getBranchId() == $target->getBranchId()) {
