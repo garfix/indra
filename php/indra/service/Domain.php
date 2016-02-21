@@ -109,7 +109,7 @@ class Domain
         $persistenceStore->storeCommit($commit);
 
         // store the branch
-        $persistenceStore->saveBranch($branch);
+        $persistenceStore->storeBranch($branch);
 
         $this->storeDiffs($branch, $branch->getCommitIndex());
 
@@ -212,7 +212,7 @@ class Domain
         $persistenceStore->storeCommit($mergeCommit);
 
         // store the branch
-        $persistenceStore->saveBranch($target);
+        $persistenceStore->storeBranch($target);
 
         $sourceCommits = $this->findMergeableCommits($target, $source);
 
@@ -386,7 +386,7 @@ class Domain
         $persistenceStore->storeCommit($undoCommit);
 
         // store the branch
-        $persistenceStore->saveBranch($branch);
+        $persistenceStore->storeBranch($branch);
 
         foreach ($persistenceStore->getDomainObjectTypeCommits($commit) as $domainObjectTypeCommit) {
 

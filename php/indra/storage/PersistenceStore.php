@@ -4,6 +4,7 @@ namespace indra\storage;
 
 use indra\diff\DiffItem;
 use indra\exception\DataBaseException;
+use indra\exception\DiffItemClassNotRecognizedException;
 use indra\object\DomainObject;
 use indra\object\Type;
 
@@ -39,11 +40,25 @@ interface PersistenceStore
     public function storeCommit(Commit $commit);
 
     /**
+     * @param Branch $branch
+     * @return void
+     */
+    public function storeBranch(Branch $branch);
+
+    /**
      * @param DomainObjectTypeCommit $dotCommit
      * @return void
      * @throws DataBaseException
      */
     public function storeDomainObjectTypeCommit(DomainObjectTypeCommit $dotCommit);
+
+    /**
+     * @param Commit $commit
+     * @return DomainObjectTypeCommit[]
+     * @throws DataBaseException
+     * @throws DiffItemClassNotRecognizedException
+     */
+    public function getDomainObjectTypeCommits(Commit $commit);
 
     /**
      * @param BranchView $branchView

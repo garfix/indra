@@ -96,7 +96,7 @@ class ClassCreator
                 '{{ typeName }}' => $classNameBase,
                 '{{ attributes }}' => $attributes,
                 '{{ typeAttributes }}' => $typeAttributes,
-                '{{ tableViewColumns }}' => $tableViewColumns,
+                '{{ tableColumns }}' => $tableViewColumns,
                 '{{ tableClassName }}' => $classNameBase . "Table",
                 '{{ typeClassName }}' => $classNameBase . "Type",
             ];

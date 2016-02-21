@@ -1,4 +1,4 @@
-# Indra
+# Indra: data version control in a relational database
 
 ## Introduction
 
@@ -8,7 +8,7 @@ This is a proof-of-concept library for the following idea:
 
 The answer, it appears, is: Yes, you can!
 
-This library, written in PHP 5.6, and using an existing relational database (e.g. MySql), has these features:
+This library, written in PHP 5.6, and using an existing relational database (MySql), has these features:
 
  * It generates database tables and PHP classes for types, attributes, and models
  * Each change to the database is done in a commit, in a branch.

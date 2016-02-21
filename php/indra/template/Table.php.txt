@@ -2,12 +2,12 @@
 
 namespace {{ namespace }};
 
-use indra\storage\TableView;
+use indra\storage\Table;
 
 /**
  * This class was auto-generated. Do not change it, for it will be overwritten.
  */
-class {{ className }} extends TableView
+class {{ className }} extends Table
 {
-{{ tableViewColumns }}
+{{ tableColumns }}
 }

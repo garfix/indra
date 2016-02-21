@@ -20,46 +20,46 @@ class MySqlPersistenceStore implements PersistenceStore
     /** @const 22 characters */
     const ATTRIBUTE_TYPE_ID = 'type------------------';
 
-    private function getTypeInformation()
-    {
-        return [
-            'int' => [
-                'type' => 'int',
-                'encoding' => '',
-                'key' => 'value',
-            ],
-            'date' => [
-                'type' => 'date',
-                'encoding' => '',
-                'key' => 'value',
-            ],
-            'time' => [
-                'type' => 'time',
-                'encoding' => '',
-                'key' => 'value',
-            ],
-            'datetime' => [
-                'type' => 'datetime',
-                'encoding' => '',
-                'key' => 'value',
-            ],
-            'double' => [
-                'type' => 'double',
-                'encoding' => '',
-                'key' => 'value',
-            ],
-            'varchar' => [
-                'type' => 'varchar(255)',
-                'encoding' => 'DEFAULT CHARSET = utf8mb4 COLLATE utf8mb4_unicode_ci',
-                'key' => 'value(32)',
-            ],
-            'longtext' => [
-                'type' => 'longtext',
-                'encoding' => 'DEFAULT CHARSET = utf8mb4 COLLATE utf8mb4_unicode_ci',
-                'key' => 'value(32)',
-            ],
-        ];
-    }
+//    private function getTypeInformation()
+//    {
+//        return [
+//            'int' => [
+//                'type' => 'int',
+//                'encoding' => '',
+//                'key' => 'value',
+//            ],
+//            'date' => [
+//                'type' => 'date',
+//                'encoding' => '',
+//                'key' => 'value',
+//            ],
+//            'time' => [
+//                'type' => 'time',
+//                'encoding' => '',
+//                'key' => 'value',
+//            ],
+//            'datetime' => [
+//                'type' => 'datetime',
+//                'encoding' => '',
+//                'key' => 'value',
+//            ],
+//            'double' => [
+//                'type' => 'double',
+//                'encoding' => '',
+//                'key' => 'value',
+//            ],
+//            'varchar' => [
+//                'type' => 'varchar(255)',
+//                'encoding' => 'DEFAULT CHARSET = utf8mb4 COLLATE utf8mb4_unicode_ci',
+//                'key' => 'value(32)',
+//            ],
+//            'longtext' => [
+//                'type' => 'longtext',
+//                'encoding' => 'DEFAULT CHARSET = utf8mb4 COLLATE utf8mb4_unicode_ci',
+//                'key' => 'value(32)',
+//            ],
+//        ];
+//    }
 
     public function createBasicTables()
     {
@@ -138,7 +138,7 @@ class MySqlPersistenceStore implements PersistenceStore
         ");
     }
 
-    public function saveBranch(Branch $branch)
+    public function storeBranch(Branch $branch)
     {
         $db = Context::getDB();
         $motherBranchId = $branch->getMotherBranchId();
@@ -227,12 +227,6 @@ class MySqlPersistenceStore implements PersistenceStore
         ");
     }
 
-    /**
-     * @param Commit $commit
-     * @return DomainObjectTypeCommit[]
-     * @throws DataBaseException
-     * @throws DiffItemClassNotRecognizedException
-     */
     public function getDomainObjectTypeCommits(Commit $commit)
     {
         $db = Context::getDB();
@@ -322,11 +316,6 @@ class MySqlPersistenceStore implements PersistenceStore
         );
     }
 
-    private function getMySqlDataType($dataType)
-    {
-        return ($dataType == 'varchar') ? 'varchar(255)' : $dataType;
-    }
-
     public function processDiffItem(BranchView $branchView, DiffItem $diffItem)
     {
         $db = Context::getDB();
@@ -356,19 +345,6 @@ class MySqlPersistenceStore implements PersistenceStore
         }
     }
 
-    private function createValueClause(array $attributeValues)
-    {
-        $values = "";
-        $db = Context::getDB();
-
-        foreach ($attributeValues as $attributeId => list($oldValue, $newValue)) {
-
-            $values .= $values ? ", " : "";
-            $values .= "`" . $attributeId . "` = '" . $db->esc($newValue) . "'";
-        }
-
-        return $values;
-    }
 
     /**
      * When a branch is created, it just makes a shallow copy of all of the views of the mother branch.
@@ -432,5 +408,24 @@ class MySqlPersistenceStore implements PersistenceStore
         $commit = new Commit($branchId, $commitIndex, $data['reason'], $data['username'], $data['datetime'], $data['merge_branch_id'], $data['merge_commit_index']);
 
         return $commit;
+    }
+
+    private function getMySqlDataType($dataType)
+    {
+        return ($dataType == 'varchar') ? 'varchar(255)' : $dataType;
+    }
+
+    private function createValueClause(array $attributeValues)
+    {
+        $values = "";
+        $db = Context::getDB();
+
+        foreach ($attributeValues as $attributeId => list($oldValue, $newValue)) {
+
+            $values .= $values ? ", " : "";
+            $values .= "`" . $attributeId . "` = '" . $db->esc($newValue) . "'";
+        }
+
+        return $values;
     }
 }
