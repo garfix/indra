@@ -1,6 +1,6 @@
 <?php
 
-namespace indra\definition;
+namespace indra\service;
 
 use indra\object\Attribute;
 use indra\service\Context;

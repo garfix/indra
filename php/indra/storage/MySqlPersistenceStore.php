@@ -11,7 +11,6 @@ use indra\exception\ObjectNotFoundException;
 use indra\object\DomainObject;
 use indra\object\Type;
 use indra\service\Context;
-use indra\service\DiffService;
 
 /**
  * @author Patrick van Bergen

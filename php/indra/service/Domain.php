@@ -9,6 +9,7 @@ use indra\object\Type;
 use indra\storage\Branch;
 use indra\storage\BranchView;
 use indra\storage\Commit;
+use indra\storage\DiffService;
 use indra\storage\DomainObjectTypeCommit;
 
 /**

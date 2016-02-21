@@ -2,7 +2,6 @@
 
 namespace indra\storage;
 
-
 /**
  * @author Patrick van Bergen
  */
@@ -10,6 +9,6 @@ class UserNameProvider
 {
     public function getUserName()
     {
-        return "Patrick";
+        return "<anonymous>";
     }
 }

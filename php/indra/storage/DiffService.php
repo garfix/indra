@@ -1,6 +1,6 @@
 <?php
 
-namespace indra\service;
+namespace indra\storage;
 
 use indra\diff\AttributeValuesChanged;
 use indra\diff\DiffItem;

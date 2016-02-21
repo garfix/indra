@@ -3,7 +3,6 @@
 namespace indra\service;
 
 use Exception;
-use indra\definition\TypeDefinition;
 use indra\exception\ClassCreationException;
 use ReflectionClass;
 
