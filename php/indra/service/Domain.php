@@ -76,6 +76,16 @@ class Domain
         return $this->activeBranch ?: $this->activeBranch = $this->getMasterBranch();
     }
 
+    /**
+     * @param string $branchId Indra-id
+     * @param int $commitIndex
+     * @return Commit
+     */
+    public function getCommitById($branchId, $commitIndex)
+    {
+        return Context::getPersistenceStore()->getCommit($branchId, $commitIndex);
+    }
+
     public function addToSaveList(DomainObject $Object)
     {
         $this->saveList[] = $Object;

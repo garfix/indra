@@ -79,3 +79,6 @@ A user may ask for a list of all changes to the database. He will then be shown 
 A user may request an "undo" of one or more commits. At that point the library will create a new commit, an "undo commit", that consists of a combination of the requested commits, 
 in reversed order.
   
+## Read more
+
+More information about the use of the library and the structures used can be found in the [wiki](https://github.com/garfix/indra/wiki).
