@@ -12,6 +12,8 @@ use indra\exception\ObjectNotFoundException;
  */
 class {{ className }} extends Model
 {
+    private $type;
+
     /**
      * @return {{ typeName }}
      */
@@ -50,9 +52,6 @@ class {{ className }} extends Model
         return Context::getPersistenceStore()->getBranchView($this->domain->getActiveBranch()->getBranchId(), $this->getType()->getId())->getTableName();
     }
 
-    private $type;
-
-#todo: this function should be generated inside Object.php.txt and not injected in Object
     private function getType()
     {
         return $this->type ?: $this->type = new {{ typeClassName }};
