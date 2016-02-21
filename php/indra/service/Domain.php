@@ -3,6 +3,7 @@
 namespace indra\service;
 
 use indra\diff\AttributeValuesChanged;
+use indra\diff\DiffItem;
 use indra\diff\ObjectAdded;
 use indra\object\DomainObject;
 use indra\object\Type;
@@ -24,9 +25,11 @@ class Domain
     private $saveList = [];
 
     /**
+     * Create a new branch and make this the active branch. New commits will be done in this branch.
+     *
      * @return Branch
      */
-    public function startNewBranch()
+    public function checkoutNewBranch()
     {
         $existingBranch = $this->getActiveBranch();
 
@@ -38,9 +41,11 @@ class Domain
     }
 
     /**
+     * Make $branch the active branch. New commits will be done in this branch.
+     *
      * @param Branch $branch
      */
-    public function startBranch(Branch $branch)
+    public function checkoutBranch(Branch $branch)
     {
         $this->activeBranch = $branch;
     }
@@ -56,6 +61,9 @@ class Domain
         return $persistenceStore->loadBranch($branchId);
     }
 
+    /**
+     * @return Branch
+     */
     public function getMasterBranch()
     {
         $persistenceStore = Context::getPersistenceStore();
@@ -87,11 +95,20 @@ class Domain
         return Context::getPersistenceStore()->getCommit($branchId, $commitIndex);
     }
 
-    public function addToSaveList(DomainObject $Object)
+    /**
+     * Not to be used by application code.
+     *
+     * @param DomainObject $Object
+     */
+    public function _addToSaveList(DomainObject $Object)
     {
         $this->saveList[] = $Object;
     }
 
+    /**
+     * @param string $commitDescription
+     * @return Commit
+     */
     public function commit($commitDescription)
     {
         $persistenceStore = Context::getPersistenceStore();
@@ -122,6 +139,10 @@ class Domain
         return $commit;
     }
 
+    /**
+     * @param Branch $branch
+     * @param int $commitIndex
+     */
     private function storeDiffs(Branch $branch, $commitIndex)
     {
         $persistenceStore = Context::getPersistenceStore();
@@ -163,6 +184,11 @@ class Domain
         }
     }
 
+    /**
+     * @param Branch $branch
+     * @param Type $type
+     * @param DiffItem[] $diffItems
+     */
     private function updateBranchView(Branch $branch, Type $type, array $diffItems)
     {
         $persistenceStore = Context::getPersistenceStore();
@@ -186,7 +212,7 @@ class Domain
 
     /**
      * @param Branch $source
-     * @param $commitDescription
+     * @param string $commitDescription
      * @return Commit
      */
     public function mergeBranch(Branch $source, $commitDescription)
@@ -410,5 +436,10 @@ class Domain
         }
 
         return $undoCommit;
+    }
+
+    public function checkoutCommit(Commit $commit)
+    {
+
     }
 }

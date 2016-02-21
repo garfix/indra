@@ -32,7 +32,7 @@ class MergeBranchesTest extends Base
 
         // start new branch and change customer
 
-        $branch = $domain->startNewBranch();
+        $branch = $domain->checkoutNewBranch();
         $branchId = $branch->getBranchId();
 
         $customer = $customerModel->loadCustomer($customerId);
@@ -43,7 +43,7 @@ class MergeBranchesTest extends Base
         $master = $domain->getMasterBranch();
 
         // change in master branch
-        $domain->startBranch($master);
+        $domain->checkoutBranch($master);
         $customer = $customerModel->loadCustomer($customerId);
         $customer->setBirthDate('1971-09-23');
         $customerModel->saveCustomer($customer);
@@ -54,18 +54,18 @@ class MergeBranchesTest extends Base
         $this->assertEquals('Dr. Jones', $customer2->getName());
         $this->assertEquals('1971-09-23', $customer2->getBirthDate());
 
-        $domain->startBranch($branch);
+        $domain->checkoutBranch($branch);
         $customer3 = $customerModel->loadCustomer($customerId);
         $this->assertEquals('Dr. Who', $customer3->getName());
         $this->assertEquals('1969-11-24', $customer3->getBirthDate());
 
         // merge new branch to master
-        $domain->startBranch($master);
+        $domain->checkoutBranch($master);
         $branch = $domain->getBranchById($branchId);
         $domain->mergeBranch($branch, "Merge");
 
         // test that the merge succeeded and that only the change was applied
-        $domain->startBranch($master);
+        $domain->checkoutBranch($master);
         $customer4 = $customerModel->loadCustomer($customerId);
         $this->assertEquals('Dr. Who', $customer4->getName());
         $this->assertEquals('1971-09-23', $customer4->getBirthDate());

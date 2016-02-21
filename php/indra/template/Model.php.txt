@@ -24,7 +24,7 @@ class {{ className }} extends Model
 
     public function save{{ typeName }}({{ typeName }} $object)
     {
-        $this->domain->addToSaveList($object);
+        $this->domain->_addToSaveList($object);
     }
 
     /**

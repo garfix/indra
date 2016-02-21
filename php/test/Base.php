@@ -53,6 +53,7 @@ class Base extends PHPUnit_Framework_TestCase
             $type = new TypeDefinition();
             $type->addAttribute('name')->setDataTypeVarchar();
             $type->addAttribute('birthDate')->setDataTypeDate();
+            $type->addAttribute('address')->setDataTypeVarchar();
             $classCreator->createClasses(CustomerPicket::class, $type);
 
             $type = new TypeDefinition();

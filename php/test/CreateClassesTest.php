@@ -7,7 +7,7 @@ use my_module\product\ProductPicket;
 use my_module\product\ProductType;
 use my_module\product\Product;
 
-require __DIR__ . '/Base.php';
+require_once __DIR__ . '/Base.php';
 
 /**
  * @author Patrick van Bergen
