@@ -12,17 +12,25 @@ use indra\storage\BranchView;
 use indra\storage\Commit;
 use indra\storage\DiffService;
 use indra\storage\DomainObjectTypeCommit;
+use indra\storage\Snapshot;
+use indra\storage\TableView;
 
 /**
  * @author Patrick van Bergen
  */
 class Domain
 {
-    /** @var Branch */
+    /** @var Branch|null */
     private $activeBranch = null;
+
+    /** @var Commit|null */
+    private $activeCommit = null;
 
     /** @var DomainObject[] */
     private $saveList = [];
+
+    /** @var DomainObject[] */
+    private $removeList = [];
 
     /**
      * Create a new branch and make this the active branch. New commits will be done in this branch.
@@ -33,11 +41,11 @@ class Domain
     {
         $existingBranch = $this->getActiveBranch();
 
-        $this->activeBranch = new Branch(Context::getIdGenerator()->generateId(), $existingBranch->getBranchId(), $existingBranch->getCommitIndex());
+        $newBranch = new Branch(Context::getIdGenerator()->generateId(), $existingBranch->getBranchId(), $existingBranch->getCommitIndex());
+        Context::getPersistenceStore()->createBranch($newBranch);
 
-        Context::getPersistenceStore()->createBranch($this->activeBranch);
-
-        return $this->activeBranch;
+        $this->checkoutBranch($newBranch);
+        return $newBranch;
     }
 
     /**
@@ -48,6 +56,7 @@ class Domain
     public function checkoutBranch(Branch $branch)
     {
         $this->activeBranch = $branch;
+        $this->activeCommit = null;
     }
 
     /**
@@ -80,7 +89,7 @@ class Domain
     /**
      * @return Branch
      */
-    public function getActiveBranch()
+    private function getActiveBranch()
     {
         return $this->activeBranch ?: $this->activeBranch = $this->getMasterBranch();
     }
@@ -103,6 +112,30 @@ class Domain
     public function _addToSaveList(DomainObject $Object)
     {
         $this->saveList[] = $Object;
+    }
+
+    /**
+     * Not to be used by application code.
+     *
+     * @param DomainObject $Object
+     */
+    public function _addToRemoveList(DomainObject $object)
+    {
+        $this->removeList[] = $object;
+#todo: this is not the place
+        Context::getPersistenceStore()->remove($object, $this->getActiveBranch());
+    }
+
+    /**
+     * Not to be used by application code.
+     *
+     * @param Type $type
+     * @param $objectId
+     * @return array|null
+     */
+    public function _loadDomainObjectAttributes(Type $type, $objectId)
+    {
+        return Context::getPersistenceStore()->loadAttributes($objectId, $this->getActiveView($type));
     }
 
     /**
@@ -438,8 +471,66 @@ class Domain
         return $undoCommit;
     }
 
+    /**
+     * @param Type $type
+     * @return TableView
+     */
+    public function getActiveView(Type $type)
+    {
+        if ($this->activeCommit && $this->activeCommit->getCommitIndex() != $this->getActiveBranch()->getCommitIndex()) {
+            return $this->getSnapshot($this->activeCommit, $type);
+        } else {
+            return Context::getPersistenceStore()->getBranchView($this->getActiveBranch()->getBranchId(), $type->getId());
+        }
+    }
+
+    public function getSnapshot(Commit $commit, Type $type)
+    {
+        $snapshot = Context::getPersistenceStore()->loadSnapshot($commit, $type->getId());
+        if (!$snapshot) {
+            $snapshot =  $this->createSnapshot($commit, $type);
+        }
+        return $snapshot;
+    }
+
+    public function createSnapshot(Commit $commit, Type $type)
+    {
+        $diffService = new DiffService();
+        $persistenceStore = Context::getPersistenceStore();
+
+        $snapshot = new Snapshot($commit->getBranchId(), $commit->getCommitIndex(), $type->getId(), Context::getIdGenerator()->generateId());
+        $persistenceStore->storeSnapshot($snapshot, $persistenceStore->getBranchView($this->getActiveBranch()->getBranchId(), $type->getId()));
+
+        $branch = $this->activeBranch;
+
+        for ($i = $branch->getCommitIndex(); $i > $commit->getCommitIndex(); $i--) {
+
+            $inBetweenCommit = Context::getPersistenceStore()->getCommit($branch->getBranchId(), $i);
+
+            foreach (Context::getPersistenceStore()->getDomainObjectTypeCommitsForType($inBetweenCommit, $type) as $domainObjectTypeCommit) {
+
+                $reversedDiffItems = [];
+
+                foreach (array_reverse($domainObjectTypeCommit->getDiffItems()) as $diffItem) {
+                    $reversedDiffItems[] = $diffService->getReverseDiffItem($diffItem);
+                }
+
+                foreach ($reversedDiffItems as $diffItem) {
+                    $persistenceStore->processDiffItem($snapshot, $diffItem);
+                }
+            }
+        }
+
+        return $snapshot;
+    }
+
     public function checkoutCommit(Commit $commit)
     {
+        $this->activeCommit = $commit;
 
+        // switch to the branch of the commit
+        if ($this->activeBranch->getBranchId() != $commit->getBranchId()) {
+            $this->activeBranch = Context::getPersistenceStore()->loadBranch($commit->getBranchId());
+        }
     }
 }

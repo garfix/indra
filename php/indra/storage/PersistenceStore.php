@@ -20,12 +20,11 @@ interface PersistenceStore
     public function createBasicTables();
 
     /**
-     * @param Type $type
      * @param string $objectId
-     * @param Branch $branch
+     * @param TableView $view
      * @return
      */
-    public function loadAttributes(Type $type, $objectId, Branch $branch);
+    public function loadAttributes($objectId, TableView $view);
 
     /**
      * @param DomainObject $object
@@ -61,6 +60,13 @@ interface PersistenceStore
     public function getDomainObjectTypeCommits(Commit $commit);
 
     /**
+     * @param Commit $commit
+     * @param Type $type
+     * @return DomainObjectTypeCommit[]
+     */
+    public function getDomainObjectTypeCommitsForType(Commit $commit, Type $type);
+
+    /**
      * @param BranchView $branchView
      * @return int
      * @throws DataBaseException
@@ -76,6 +82,14 @@ interface PersistenceStore
     public function getBranchView($branchId, $typeId);
 
     /**
+     * @param Commit $commit
+     * @param string $typeId
+     * @return Snapshot
+     * @throws DataBaseException
+     */
+    public function loadSnapshot(Commit $commit, $typeId);
+
+    /**
      * @param BranchView $branchView
      * @param Type $type
      * @return void
@@ -84,20 +98,27 @@ interface PersistenceStore
     public function storeBranchView(BranchView $branchView, Type $type);
 
     /**
-     * @param BranchView $newBranchView
-     * @param BranchView $oldBranchView
+     * @param Snapshot $snapshot
+     * @param BranchView $branchView
+     * @return mixed
+     */
+    public function storeSnapshot(Snapshot $snapshot, BranchView $branchView);
+
+    /**
+     * @param TableView $newTableView
+     * @param TableView $oldTableView
      * @return void
      * @throws DataBaseException
      */
-    public function cloneBranchView(BranchView $newBranchView, BranchView $oldBranchView);
+    public function cloneTableView(TableView $newTableView, TableView $oldTableView);
 
     /**
-     * @param BranchView $branchView
+     * @param BranchView $tableView
      * @param DiffItem $diffItem
      * @return void
      * @throws DataBaseException
      */
-    public function processDiffItem(BranchView $branchView, DiffItem $diffItem);
+    public function processDiffItem(TableView $tableView, DiffItem $diffItem);
 
     /**
      * @param Branch $branch

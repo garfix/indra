@@ -2,14 +2,16 @@
 
 namespace indra\storage;
 
-
 /**
  * @author Patrick van Bergen
  */
-class BranchView implements TableView
+class Snapshot implements TableView
 {
     /** @var  string */
     private $branchId;
+
+    /** @var  int */
+    private $commitIndex;
 
     /** @var  string */
     private $typeId;
@@ -17,9 +19,10 @@ class BranchView implements TableView
     /** @var  string */
     private $viewId;
 
-    public function __construct($branchId, $typeId, $viewId)
+    public function __construct($branchId, $commitIndex, $typeId, $viewId)
     {
         $this->branchId = $branchId;
+        $this->commitIndex = $commitIndex;
         $this->typeId = $typeId;
         $this->viewId = $viewId;
     }
@@ -30,6 +33,14 @@ class BranchView implements TableView
     public function getBranchId()
     {
         return $this->branchId;
+    }
+
+    /**
+     * @return int
+     */
+    public function getCommitIndex()
+    {
+        return $this->commitIndex;
     }
 
     /**
@@ -53,6 +64,6 @@ class BranchView implements TableView
      */
     public function getTableName()
     {
-        return 'view_' . $this->viewId;
+        return 'snapshot_' . $this->viewId;
     }
 }

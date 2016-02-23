@@ -18,7 +18,7 @@ class CheckoutTest extends Base
         parent::createCustomerType();
     }
 
-    public function _testCreateObject()
+    public function testCreateObject()
     {
         $domain = new Domain();
         $model = new CustomerModel($domain);
@@ -44,6 +44,7 @@ class CheckoutTest extends Base
         $this->assertSame('Barker Gulch', $e2->getAddress());
 
         // make sure no commits are possible in this state
+#todo
     }
 
     private function setupFixture(Domain $domain, CustomerModel $model)
@@ -69,7 +70,7 @@ class CheckoutTest extends Base
 
         $c1->setAddress("Springs fall 222");
         $model->saveCustomer($c1);
-        $c2->setAddress("Barker gulch");
+        $c2->setAddress("Barker Gulch");
         $model->saveCustomer($c2);
 
         $specialCommit = $domain->commit("Change of addresses - branch 1");

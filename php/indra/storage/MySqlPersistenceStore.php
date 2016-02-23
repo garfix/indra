@@ -111,6 +111,7 @@ class MySqlPersistenceStore implements PersistenceStore
             CREATE TABLE IF NOT EXISTS indra_snapshot (
 					`branch_id`				    binary(22) not null,
 					`commit_index`			    int not null,
+					`type_id`				    binary(22) not null,
 					`view_id`	                binary(22) not null,
 					primary key (`branch_id`, `commit_index`)
             ) engine InnoDB
@@ -178,14 +179,12 @@ class MySqlPersistenceStore implements PersistenceStore
         }
     }
 
-    public function loadAttributes(Type $type, $objectId, Branch $branch)
+    public function loadAttributes($objectId, TableView $view)
     {
         $db = Context::getDB();
 
-        $branchView = $this->getBranchView($branch->getBranchId(), $type->getId());
-
         $attributeValues = $db->querySingleRow("
-            SELECT * FROM `" . $branchView->getTableName() . "`
+            SELECT * FROM `" . $view->getTableName() . "`
             WHERE id = '" . $db->esc($objectId) . "'
         ");
 
@@ -252,6 +251,36 @@ class MySqlPersistenceStore implements PersistenceStore
         return $dotCommits;
     }
 
+    /**
+     * @param Commit $commit
+     * @param Type $type
+     * @return DomainObjectTypeCommit[]
+     */
+    public function getDomainObjectTypeCommitsForType(Commit $commit, Type $type)
+    {
+        $db = Context::getDB();
+
+        $rows = $db->queryMultipleRows("
+            SELECT type_id, diff
+            FROM indra_commit_type
+            WHERE branch_id = '" . $commit->getBranchId() . "' AND commit_index = '" . $commit->getCommitIndex() . "' AND type_id = '" . $type->getId() . "'
+        ");
+
+        $serializer = new DiffService();
+
+        $dotCommits = [];
+
+        foreach ($rows as $row) {
+
+            $diffItems = $serializer->deserializeDiffItems($row['diff']);
+            $dotCommit = new DomainObjectTypeCommit($commit->getBranchId(), $type->getId(), $commit->getCommitIndex(), $diffItems);
+
+            $dotCommits[] = $dotCommit;
+        }
+
+        return $dotCommits;
+    }
+
     public function getNumberOfBranchesUsingView(BranchView $branchView)
     {
         $db = Context::getDB();
@@ -281,6 +310,33 @@ class MySqlPersistenceStore implements PersistenceStore
         return $branchView;
     }
 
+    /**
+     * @param Commit $commit
+     * @param string $typeId
+     * @return Snapshot|null
+     * @throws DataBaseException
+     */
+    public function loadSnapshot(Commit $commit, $typeId)
+    {
+        $db = Context::getDB();
+
+        $branchId = $commit->getBranchId();
+        $commitIndex = $commit->getCommitIndex();
+
+        $viewId = $db->querySingleCell("
+            SELECT view_id
+            FROM indra_snapshot
+            WHERE branch_id = '" . $branchId . "' AND commit_index = '" . $commitIndex . "' AND type_id = '" . $typeId . "'");
+
+        if ($viewId) {
+            $snapshot = new Snapshot($branchId, $commit, $typeId, $viewId);
+        } else {
+            $snapshot = null;
+        }
+
+        return $snapshot;
+    }
+
     public function storeBranchView(BranchView $branchView, Type $type)
     {
         $db = Context::getDB();
@@ -291,6 +347,28 @@ class MySqlPersistenceStore implements PersistenceStore
                 type_id = '" . $branchView->getTypeId() . "',
                 view_id = '" . $branchView->getViewId() . "'
         ");
+
+        $this->createTableForView($branchView, $type);
+    }
+
+    public function storeSnapshot(Snapshot $snapshot, BranchView $branchView)
+    {
+        $db = Context::getDB();
+
+        $db->execute("
+            INSERT INTO indra_snapshot
+            SET branch_id = '" . $snapshot->getBranchId() . "',
+                commit_index = '" . $snapshot->getCommitIndex() . "',
+                type_id = '" . $snapshot->getTypeId() . "',
+                view_id = '" . $snapshot->getViewId() . "'
+        ");
+
+        $this->cloneTableView($snapshot, $branchView);
+    }
+
+    public function createTableForView(TableView $tableView, Type $type)
+    {
+        $db = Context::getDB();
 
         $columns = [];
 
@@ -308,7 +386,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $temporary = Context::inTestMode() ? "TEMPORARY" : "";
 
         $db->execute("
-            CREATE {$temporary} TABLE " . $branchView->getTableName() . " (
+            CREATE {$temporary} TABLE " . $tableView->getTableName() . " (
                 `id` binary(22) NOT NULL,
                 {$fields}
                 primary key (`id`)
@@ -316,7 +394,7 @@ class MySqlPersistenceStore implements PersistenceStore
         );
     }
 
-    public function processDiffItem(BranchView $branchView, DiffItem $diffItem)
+    public function processDiffItem(TableView $tableView, DiffItem $diffItem)
     {
         $db = Context::getDB();
 
@@ -325,7 +403,7 @@ class MySqlPersistenceStore implements PersistenceStore
             $values = $this->createValueClause($diffItem->getAttributeValues());
 
             $db->execute("
-                UPDATE `" . $branchView->getTableName() . "`
+                UPDATE `" . $tableView->getTableName() . "`
                 SET {$values}
                 WHERE id = '" . $db->esc($diffItem->getObjectId()) . "'
             ");
@@ -335,7 +413,7 @@ class MySqlPersistenceStore implements PersistenceStore
             $values = $this->createValueClause($diffItem->getAttributeValues());
 
             $db->execute("
-                INSERT INTO `" . $branchView->getTableName() . "`
+                INSERT INTO `" . $tableView->getTableName() . "`
                 SET id = '" . $db->esc($diffItem->getObjectId()) . "',
                 {$values}
             ");
@@ -345,16 +423,6 @@ class MySqlPersistenceStore implements PersistenceStore
         }
     }
 
-
-    /**
-     * When a branch is created, it just makes a shallow copy of all of the views of the mother branch.
-     * When one of the branches sharing the shallow copy changes a view of a type,
-     * it must make a full copy of the view. That's what happens here.
-     *
-     * @param BranchView $newBranchView
-     * @param BranchView $oldBranchView
-     * @throws DataBaseException
-     */
     public function cloneBranchView(BranchView $newBranchView, BranchView $oldBranchView)
     {
         $db = Context::getDB();
@@ -365,17 +433,33 @@ class MySqlPersistenceStore implements PersistenceStore
             WHERE branch_id = '" . $oldBranchView->getBranchId() . "' AND type_id = '" . $oldBranchView->getTypeId() . "'
         ");
 
+        $this->cloneTableView($newBranchView, $oldBranchView);
+    }
+
+    /**
+     * When a branch is created, it just makes a shallow copy of all of the views of the mother branch.
+     * When one of the branches sharing the shallow copy changes a view of a type,
+     * it must make a full copy of the view. That's what happens here.
+     *
+     * @param TableView $newTableView
+     * @param TableView $oldTableView
+     * @throws DataBaseException
+     */
+    public function cloneTableView(TableView $newTableView, TableView $oldTableView)
+    {
+        $db = Context::getDB();
+
         // when testing we don't want real tables;
         // not just because they have to be removed, but especially because a 'create table' statement _implicitly commits the transaction_
         $temporary = Context::inTestMode() ? "TEMPORARY" : "";
 
         $db->execute("
-            CREATE {$temporary} TABLE " . $newBranchView->getTableName() . " AS
-            SELECT * FROM " . $oldBranchView->getTableName() . "
+            CREATE {$temporary} TABLE " . $newTableView->getTableName() . " AS
+            SELECT * FROM " . $oldTableView->getTableName() . "
         ");
         if (!Context::inTestMode()) {
             $db->execute("
-                ALTER TABLE " . $newBranchView->getTableName() . " ADD PRIMARY KEY (id)
+                ALTER TABLE " . $newTableView->getTableName() . " ADD PRIMARY KEY (id)
             ");
 #todo: copy all other indexes on the old table
         }
