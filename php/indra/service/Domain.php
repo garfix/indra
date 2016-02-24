@@ -135,7 +135,20 @@ class Domain
      */
     public function _loadDomainObjectAttributes(Type $type, $objectId)
     {
-        return Context::getPersistenceStore()->loadAttributes($objectId, $this->getActiveView($type));
+        return Context::getPersistenceStore()->loadAttributes($objectId, $this->_getActiveView($type));
+    }
+
+    /**
+     * @param Type $type
+     * @return TableView
+     */
+    public function _getActiveView(Type $type)
+    {
+        if ($this->activeCommit && $this->activeCommit->getCommitIndex() != $this->getActiveBranch()->getCommitIndex()) {
+            return $this->getSnapshot($this->activeCommit, $type);
+        } else {
+            return Context::getPersistenceStore()->getBranchView($this->getActiveBranch()->getBranchId(), $type->getId());
+        }
     }
 
     /**
@@ -490,20 +503,7 @@ class Domain
         return $undoCommit;
     }
 
-    /**
-     * @param Type $type
-     * @return TableView
-     */
-    public function getActiveView(Type $type)
-    {
-        if ($this->activeCommit && $this->activeCommit->getCommitIndex() != $this->getActiveBranch()->getCommitIndex()) {
-            return $this->getSnapshot($this->activeCommit, $type);
-        } else {
-            return Context::getPersistenceStore()->getBranchView($this->getActiveBranch()->getBranchId(), $type->getId());
-        }
-    }
-
-    public function getSnapshot(Commit $commit, Type $type)
+    private function getSnapshot(Commit $commit, Type $type)
     {
         $snapshot = Context::getPersistenceStore()->loadSnapshot($commit, $type->getId());
         if (!$snapshot) {
@@ -512,7 +512,7 @@ class Domain
         return $snapshot;
     }
 
-    public function createSnapshot(Commit $commit, Type $type)
+    private function createSnapshot(Commit $commit, Type $type)
     {
         $diffService = new DiffService();
         $persistenceStore = Context::getPersistenceStore();

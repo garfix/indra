@@ -49,7 +49,7 @@ class {{ className }} extends Model
 
     public function get{{ typeName }}Table()
     {
-        return $this->domain->getActiveView($this->getType())->getTableName();
+        return $this->domain->_getActiveView($this->getType())->getTableName();
     }
 
     private function getType()
