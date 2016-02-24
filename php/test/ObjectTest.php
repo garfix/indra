@@ -67,6 +67,7 @@ class CreateObjectTest extends Base
         $id = $customer->getId();
 
         $model->removeCustomer($customer);
+        $domain->commit("Remove Dr. Jones");
 
         $exception = false;
 

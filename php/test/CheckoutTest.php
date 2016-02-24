@@ -44,7 +44,17 @@ class CheckoutTest extends Base
         $this->assertSame('Barker Gulch', $e2->getAddress());
 
         // make sure no commits are possible in this state
-#todo
+        $exception = false;
+
+        try {
+            $c1->setAddress('Highway 66');
+            $model->saveCustomer($c1);
+            $domain->commit("Change of address");
+        } catch (Exception $e) {
+            $exception = true;
+        }
+
+        $this->assertTrue($exception);
     }
 
     private function setupFixture(Domain $domain, CustomerModel $model)

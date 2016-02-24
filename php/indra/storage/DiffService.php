@@ -32,6 +32,10 @@ class DiffService
                 $value['class'] = 'ObjectAdded';
                 $value['object'] = $diffItem->getObjectId();
                 $value['attributes'] = $diffItem->getAttributeValues();
+            } elseif ($diffItem instanceof ObjectRemoved) {
+                $value['class'] = 'ObjectRemoved';
+                $value['object'] = $diffItem->getObjectId();
+                $value['attributes'] = $diffItem->getAttributeValues();
             } else {
                 throw new DiffItemClassNotRecognizedException();
             }
@@ -55,6 +59,9 @@ class DiffService
             } elseif ($class == 'ObjectAdded') {
                 $diffItem = new ObjectAdded($value['object'], $value['attributes']);
                 $diffItems[] = $diffItem;
+            } elseif ($class == 'ObjectRemoved') {
+                $diffItem = new ObjectRemoved($value['object'], $value['attributes']);
+                $diffItems[] = $diffItem;
             } else {
                 throw new DiffItemClassNotRecognizedException();
             }
@@ -67,20 +74,32 @@ class DiffService
     {
         if ($diffItem instanceof AttributeValuesChanged) {
 
-            $reversedAttributeValues = [];
-
-            foreach ($diffItem->getAttributeValues() as $attributeId => list($oldValue, $newValue)) {
-                $reversedAttributeValues[$attributeId] = [$newValue, $oldValue];
-            }
-
+            $reversedAttributeValues = $this->reverseAttributes($diffItem->getAttributeValues());
             return new AttributeValuesChanged($diffItem->getObjectId(), $reversedAttributeValues);
 
         } elseif ($diffItem instanceof ObjectAdded) {
 
-            return new ObjectRemoved($diffItem->getObjectId());
+            $reversedAttributeValues = $this->reverseAttributes($diffItem->getAttributeValues());
+            return new ObjectRemoved($diffItem->getObjectId(), $reversedAttributeValues);
+
+        } elseif ($diffItem instanceof ObjectRemoved) {
+
+            $reversedAttributeValues = $this->reverseAttributes($diffItem->getAttributeValues());
+            return new ObjectAdded($diffItem->getObjectId(), $reversedAttributeValues);
 
         } else {
             throw new DiffItemClassNotRecognizedException();
         }
+    }
+
+    private function reverseAttributes($attributeValues)
+    {
+        $reversedAttributeValues = [];
+
+        foreach ($attributeValues as $attributeId => list($oldValue, $newValue)) {
+            $reversedAttributeValues[$attributeId] = [$newValue, $oldValue];
+        }
+
+        return $reversedAttributeValues;
     }
 }

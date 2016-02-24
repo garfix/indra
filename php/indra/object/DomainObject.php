@@ -19,7 +19,7 @@ class DomainObject
     protected $attributes = [];
 
     /** @var mixed[]  */
-    public $originalAttributes = [];
+    protected $originalAttributes = [];
 
     public function __construct(Type $type, $id, $attributes)
     {
@@ -51,6 +51,14 @@ class DomainObject
     public function getAttributeValues()
     {
         return $this->attributes;
+    }
+
+    /**
+     * @return array
+     */
+    public function getOriginalAttributeValues()
+    {
+        return $this->originalAttributes;
     }
 
     public function setAttributeValues($attributeValues)

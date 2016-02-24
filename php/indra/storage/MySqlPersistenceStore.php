@@ -5,6 +5,7 @@ namespace indra\storage;
 use indra\diff\AttributeValuesChanged;
 use indra\diff\DiffItem;
 use indra\diff\ObjectAdded;
+use indra\diff\ObjectRemoved;
 use indra\exception\DataBaseException;
 use indra\exception\DiffItemClassNotRecognizedException;
 use indra\exception\ObjectNotFoundException;
@@ -416,6 +417,13 @@ class MySqlPersistenceStore implements PersistenceStore
                 INSERT INTO `" . $tableView->getTableName() . "`
                 SET id = '" . $db->esc($diffItem->getObjectId()) . "',
                 {$values}
+            ");
+
+        } elseif ($diffItem instanceof ObjectRemoved) {
+
+            $db->execute("
+                DELETE FROM `" . $tableView->getTableName() . "`
+                WHERE id = '" . $db->esc($diffItem->getObjectId()) . "'
             ");
 
         } else {

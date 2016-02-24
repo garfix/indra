@@ -5,6 +5,8 @@ namespace indra\service;
 use indra\diff\AttributeValuesChanged;
 use indra\diff\DiffItem;
 use indra\diff\ObjectAdded;
+use indra\diff\ObjectRemoved;
+use indra\exception\CommitNotAllowedException;
 use indra\object\DomainObject;
 use indra\object\Type;
 use indra\storage\Branch;
@@ -122,8 +124,6 @@ class Domain
     public function _addToRemoveList(DomainObject $object)
     {
         $this->removeList[] = $object;
-#todo: this is not the place
-        Context::getPersistenceStore()->remove($object, $this->getActiveBranch());
     }
 
     /**
@@ -141,11 +141,16 @@ class Domain
     /**
      * @param string $commitDescription
      * @return Commit
+     * @throws CommitNotAllowedException
      */
     public function commit($commitDescription)
     {
         $persistenceStore = Context::getPersistenceStore();
         $branch = $this->getActiveBranch();
+
+        if (!$this->allowCommit()) {
+            throw CommitNotAllowedException::getOldCommit();
+        }
 
         $branch->increaseCommitIndex();
 
@@ -172,6 +177,11 @@ class Domain
         return $commit;
     }
 
+    private function allowCommit()
+    {
+        return !$this->activeCommit || ($this->activeCommit->getCommitIndex() == $this->getActiveBranch()->getCommitIndex());
+    }
+
     /**
      * @param Branch $branch
      * @param int $commitIndex
@@ -181,16 +191,12 @@ class Domain
         $persistenceStore = Context::getPersistenceStore();
         $branchId = $branch->getBranchId();
 
-#todo this must be much improved
-# do not store what is deleted, check if an object is first created, updated, then deleted, etc.
-
         $objectTypeDiff = [];
         $types = [];
 
         foreach ($this->saveList as $object) {
 
             $typeId = $object->getType()->getId();
-
             $types[$typeId] = $object->getType();
 
             $changedValues = $object->getChangedAttributeValues();
@@ -205,6 +211,19 @@ class Domain
                 $objectTypeDiff[$typeId][] = new AttributeValuesChanged($object->getId(), $changedValues);
 
             }
+        }
+
+        foreach ($this->removeList as $object) {
+
+            $typeId = $object->getType()->getId();
+            $types[$typeId] = $object->getType();
+
+            $removedAttributeValues = [];
+            foreach ($object->getOriginalAttributeValues() as $attributeId => $value) {
+                $removedAttributeValues[$attributeId] = [$value, null];
+            }
+
+            $objectTypeDiff[$typeId][] = new ObjectRemoved($object->getId(), $removedAttributeValues);
         }
 
         foreach ($objectTypeDiff as $typeId => $diffItems) {
