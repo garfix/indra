@@ -132,17 +132,11 @@ class Context
     public static function getMySqli()
     {
         if (!self::$mysqli) {
+            throw new DataBaseException("No MySqli connection provided. Please run Context::setMySqli()");
+        }
 
-            $ini = parse_ini_file(__DIR__ . '/../../../config.ini', true);
-
-            $mysqli = new mysqli($ini['database']['host'], $ini['database']['username'], $ini['database']['password'], $ini['database']['db']);
-
-            if ($mysqli->connect_errno) {
-                throw new DataBaseException("Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error);
-            }
-
-            self::$mysqli = $mysqli;
-
+        if (self::$mysqli->connect_errno) {
+            throw new DataBaseException("Failed to connect to MySQL: (" . self::$mysqli->connect_errno . ") " . self::$mysqli->connect_error);
         }
 
         return self::$mysqli;

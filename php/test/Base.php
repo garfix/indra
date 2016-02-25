@@ -22,6 +22,10 @@ class Base extends PHPUnit_Framework_TestCase
 
     public static function initialize()
     {
+        $mysqli = new mysqli('localhost', 'root', '', 'indra_test');
+
+        Context::setMySqli($mysqli);
+
         Context::setTestMode(true);
 
         if (!self::$initialized) {
