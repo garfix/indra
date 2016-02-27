@@ -33,6 +33,11 @@ class Branch
         return $this->motherBranchId;
     }
 
+    public function setMotherBranchId($branchId)
+    {
+        $this->motherBranchId = $branchId;
+    }
+
     public function getMotherCommitIndex()
     {
         return $this->motherCommitIndex;

@@ -42,7 +42,7 @@ class RebaseTest extends  \Base
 
         // insert all commits of master since the departure before the new commits of specialBranch
         $domain->rebaseBranch($specialBranch);
-//
+
 //        // post test
 //        $e1 = $model->loadCustomer($c1->getId());
 //        $e2 = $model->loadCustomer($c2->getId());
