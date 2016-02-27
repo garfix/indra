@@ -9,6 +9,10 @@ use indra\diff\ObjectRemoved;
 use indra\exception\CommitNotAllowedException;
 use indra\object\ModelConnection;
 use indra\object\Type;
+use indra\process\CommitStagedChanged;
+use indra\process\Merge;
+use indra\process\Rebase;
+use indra\process\Revert;
 use indra\storage\Branch;
 use indra\storage\BranchView;
 use indra\storage\Commit;
@@ -138,113 +142,21 @@ class Domain
      */
     public function commit($commitDescription)
     {
-        $branch = $this->getActiveBranch();
-
         if (!$this->allowCommit()) {
             throw CommitNotAllowedException::getOldCommit();
         }
 
-        // create commit and update branch
-        $commit = $this->createCommit($branch, $commitDescription);
-
-        // store all the staged changes of this commit
-        $this->storeChanges($branch);
-
+        $process = new CommitStagedChanged();
+        $commit = $process->run($this->getActiveBranch(), $this->modelConnection, $commitDescription);
         return $commit;
     }
 
+    /**
+     * @return bool
+     */
     private function allowCommit()
     {
         return !$this->activeCommit || ($this->activeCommit->getCommitIndex() == $this->getActiveBranch()->getCommitIndex());
-    }
-
-    /**
-     * @param Branch $branch
-     */
-    private function storeChanges(Branch $branch)
-    {
-        $persistenceStore = Context::getPersistenceStore();
-        $branchId = $branch->getBranchId();
-        $commitIndex = $branch->getCommitIndex();
-
-        $objectTypeDiff = [];
-        $types = [];
-
-        foreach ($this->modelConnection->getSaveList() as $object) {
-
-            $typeId = $object->getType()->getId();
-            $types[$typeId] = $object->getType();
-
-            $changedValues = $object->getChangedAttributeValues();
-
-            if ($object->isNew()) {
-
-                // add / update object (the situation is handled in the database class)
-                $objectTypeDiff[$typeId][] = new ObjectAdded($object->getId(), $changedValues);
-
-            } elseif ($changedValues) {
-
-                $objectTypeDiff[$typeId][] = new AttributeValuesChanged($object->getId(), $changedValues);
-
-            }
-
-            $object->markAsSaved();
-        }
-
-        foreach ($this->modelConnection->getRemoveList() as $object) {
-
-            $typeId = $object->getType()->getId();
-            $types[$typeId] = $object->getType();
-
-            $removedAttributeValues = [];
-            foreach ($object->getOriginalAttributeValues() as $attributeId => $value) {
-                $removedAttributeValues[$attributeId] = [$value, null];
-            }
-
-            $objectTypeDiff[$typeId][] = new ObjectRemoved($object->getId(), $removedAttributeValues);
-        }
-
-        $this->modelConnection->clear();
-
-        // store diffs per object type
-        foreach ($objectTypeDiff as $typeId => $diffItems) {
-
-            $dotCommit = new DomainObjectTypeCommit($branchId, $typeId, $commitIndex, $diffItems);
-
-            $persistenceStore->storeDomainObjectTypeCommit($dotCommit);
-
-            $this->updateBranchView($branch, $types[$typeId], $diffItems);
-        }
-    }
-
-    /**
-     * @param Branch $branch
-     * @param Type $type
-     * @param DiffItem[] $diffItems
-     */
-    private function updateBranchView(Branch $branch, Type $type, array $diffItems)
-    {
-        $persistenceStore = Context::getPersistenceStore();
-
-        $branchView = $persistenceStore->getBranchView($branch->getBranchId(), $type->getId());
-
-        // if this branch has no view, or if it is used by other branches as well, create a new view
-        if (!$branchView) {
-
-            $branchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
-            $persistenceStore->storeBranchView($branchView, $type);
-
-        } elseif ($persistenceStore->getNumberOfBranchesUsingView($branchView) > 1) {
-
-            $newBranchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
-            $persistenceStore->cloneBranchView($newBranchView, $branchView);
-            $branchView = $newBranchView;
-
-        }
-
-        foreach ($diffItems as $diffItem) {
-            $persistenceStore->processDiffItem($branchView, $diffItem);
-        }
     }
 
     /**
@@ -254,190 +166,9 @@ class Domain
      */
     public function mergeBranch(Branch $source, $commitDescription)
     {
-        $persistenceStore = Context::getPersistenceStore();
-
-        $target = $this->getActiveBranch();
-
-        // Special case: no source = target
-        if ($source->getBranchId() == $target->getBranchId()) {
-            return null;
-        }
-
-        // create commit and update branch
-        $mergeCommit = $this->createCommit($target, $commitDescription);
-
-        $sourceCommits = $this->findMergeableCommits($target, $source);
-
-        foreach ($sourceCommits as $sourceCommit) {
-            foreach ($persistenceStore->getDomainObjectTypeCommits($sourceCommit) as $dotCommit) {
-
-                // update the branch view
-                $branchView = $persistenceStore->getBranchView($target->getBranchId(), $dotCommit->getTypeId());
-                foreach ($dotCommit->getDiffItems() as $diffItem) {
-                    $persistenceStore->processDiffItem($branchView, $diffItem);
-                }
-
-                // add the diffs of the commit
-                $newDotCommit = new DomainObjectTypeCommit($target->getBranchId(), $dotCommit->getTypeId(), $mergeCommit->getCommitIndex(), $dotCommit->getDiffItems());
-                $persistenceStore->storeDomainObjectTypeCommit($newDotCommit);
-            }
-        }
-
+        $merge = new Merge();
+        $mergeCommit = $merge->run($this->getActiveBranch(), $source, $commitDescription);
         return $mergeCommit;
-    }
-
-    /**
-     * @param Branch $branch
-     * @param $commitDescription
-     * @return Commit
-     */
-    private function createCommit(Branch $branch, $commitDescription)
-    {
-        $persistenceStore = Context::getPersistenceStore();
-
-        // update the branch
-        $branch->increaseCommitIndex();
-        $persistenceStore->storeBranch($branch);
-
-        $dateTime = Context::getDateTimeGenerator()->getDateTime();
-        $userName = Context::getUserNameProvider()->getUserName();
-
-        // create a new commit
-        $commit = new Commit($branch->getBranchId(), $branch->getCommitIndex(), $commitDescription, $userName, $dateTime->format('Y-m-d H:i:s'));
-
-        // store the commit
-        $persistenceStore->storeCommit($commit);
-
-        return $commit;
-    }
-
-    /**
-     * @param Branch $target
-     * @param Branch $source
-     * @return Commit[]
-     * @throws \Exception
-     */
-    private function findMergeableCommits(Branch $target, Branch $source)
-    {
-        $persistenceStore = Context::getPersistenceStore();
-
-        /** @var Branch[] $parentBranches */
-        list($parentBranches, $finalCommitId) = $this->findMergeableBranchList($target, $source);
-
-        $commits = [];
-
-        $lastCommitIndex = $parentBranches[0]->getCommitIndex();
-        $lastBranchIndex = (count($parentBranches) - 1);
-
-        foreach ($parentBranches as $p => $parentBranch) {
-
-            $isLastBranch = ($p == $lastBranchIndex);
-
-            if ($isLastBranch) {
-                // the final commit itself should not be reached
-                $firstCommitIndex = $finalCommitId + 1;
-            } else {
-                $firstCommitIndex = 1;
-            }
-
-            for ($i = $lastCommitIndex; $i >= $firstCommitIndex; $i--) {
-                $commits[] = $persistenceStore->getCommit($parentBranch->getBranchId(), $i);
-            }
-
-            $lastCommitIndex = $parentBranch->getMotherCommitIndex();
-        }
-
-        $commits = array_reverse($commits);
-
-        return $commits;
-    }
-
-    /**
-     * @param Branch $target
-     * @param Branch $source
-     * @return array [Branch[], int]
-     * @throws \Exception
-     */
-    private function findMergeableBranchList(Branch $target, Branch $source)
-    {
-        $persistenceStore = Context::getPersistenceStore();
-
-        /** @var Branch[] $sourceParents */
-        $sourceParents = [$source];
-        /** @var Branch[] $targetParents */
-        $targetParents = [$target];
-
-        $sourceParentIds = [$source->getBranchId()];
-        $targetParentIds = [$target->getBranchId()];
-
-        while ($target->getMotherBranchId() || $source->getMotherBranchId()) {
-
-            // repeat until both the source route and the target route have reached a common branch
-            if (in_array($source->getBranchId(), $targetParentIds) && in_array($target->getBranchId(), $sourceParentIds)) {
-                break;
-            }
-
-            // take the next branches up
-            if ($target->getMotherBranchId()) {
-                $target = $persistenceStore->loadBranch($target->getMotherBranchId());
-                $targetParents[] = $target;
-                $targetParentIds[] = $target->getBranchId();
-            }
-
-            if ($source->getMotherBranchId()) {
-                $source = $persistenceStore->loadBranch($source->getMotherBranchId());
-                $sourceParents[] = $source;
-                $sourceParentIds[] = $source->getBranchId();
-            }
-        }
-
-        $finalSourceCommitId = null;
-        $finalTargetCommitId = null;
-
-        $check1 = false;
-        $check2 = false;
-
-        // go up the source path until the target path is reached, and collect the branches
-        $mergeableBranchList = [];
-        foreach ($sourceParents as $sourceParent) {
-
-            // collect
-            $mergeableBranchList[] = $sourceParent;
-
-            // has the source path reached the target path?
-            if (in_array($sourceParent->getBranchId(), $targetParentIds)) {
-                $check1 = true;
-                break;
-            } else {
-                // no: move the final commit up
-                $finalSourceCommitId = $sourceParent->getMotherCommitIndex();
-            }
-        }
-
-        $finalTargetCommitId = null;
-        foreach ($targetParents as $targetParent) {
-            // has the target path reached the source path?
-            if (in_array($targetParent->getBranchId(), $sourceParentIds)) {
-                $check2 = true;
-                break;
-            } else {
-                // no: move the final commit up
-                $finalTargetCommitId = $targetParent->getMotherCommitIndex();
-            }
-        }
-
-        if (!$check1 || !$check2) {
-            throw new \Exception('Check failed');
-        }
-
-        // the merge should go up to the first commit where the paths split
-        if ($finalTargetCommitId !== null) {
-            $finalCommitId = min($finalSourceCommitId, $finalTargetCommitId);
-        } else {
-            $finalCommitId = $finalSourceCommitId;
-        }
-
-        return [$mergeableBranchList, $finalCommitId];
     }
 
     /**
@@ -448,33 +179,8 @@ class Domain
      */
     public function revertCommit(Commit $commit)
     {
-        $persistenceStore = Context::getPersistenceStore();
-        $branch = Context::getPersistenceStore()->loadBranch($commit->getBranchId());
-        $diffService = new DiffService();
-
-        $undoCommit = $this->createCommit($branch, sprintf("Undo commit %s (%s)", $commit->getCommitIndex(), $commit->getReason()));
-
-        foreach ($persistenceStore->getDomainObjectTypeCommits($commit) as $domainObjectTypeCommit) {
-
-            $typeId = $domainObjectTypeCommit->getTypeId();
-
-            $reversedDiffItems = [];
-
-            foreach (array_reverse($domainObjectTypeCommit->getDiffItems()) as $diffItem) {
-                $reversedDiffItems[] = $diffService->getReverseDiffItem($diffItem);
-            }
-
-            $dotCommit = new DomainObjectTypeCommit($commit->getBranchId(), $typeId, $branch->getCommitIndex(), $reversedDiffItems);
-
-            $persistenceStore->storeDomainObjectTypeCommit($dotCommit);
-
-            $branchView = $persistenceStore->getBranchView($branch->getBranchId(), $domainObjectTypeCommit->getTypeId());
-
-            foreach ($reversedDiffItems as $diffItem) {
-                $persistenceStore->processDiffItem($branchView, $diffItem);
-            }
-        }
-
+        $revert = new Revert();
+        $undoCommit = $revert->run($this->getActiveBranch(), $commit);
         return $undoCommit;
     }
 
@@ -528,8 +234,9 @@ class Domain
         }
     }
 
-    public function rebaseBranch($branch)
+    public function rebaseBranch(Branch $source)
     {
-
+        $rebase = new Rebase();
+        $rebase->run($this->getActiveBranch(), $source);
     }
 }
