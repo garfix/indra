@@ -7,7 +7,7 @@ use indra\diff\DiffItem;
 use indra\diff\ObjectAdded;
 use indra\diff\ObjectRemoved;
 use indra\exception\CommitNotAllowedException;
-use indra\object\DomainObject;
+use indra\object\ModelConnection;
 use indra\object\Type;
 use indra\storage\Branch;
 use indra\storage\BranchView;
@@ -28,11 +28,13 @@ class Domain
     /** @var Commit|null */
     private $activeCommit = null;
 
-    /** @var DomainObject[] */
-    private $saveList = [];
+    /** @var ModelConnection */
+    private $modelConnection;
 
-    /** @var DomainObject[] */
-    private $removeList = [];
+    public function __construct()
+    {
+        $this->modelConnection = new ModelConnection();
+    }
 
     /**
      * Create a new branch and make this the active branch. New commits will be done in this branch.
@@ -107,42 +109,18 @@ class Domain
     }
 
     /**
-     * Not to be used by application code.
-     *
-     * @param DomainObject $Object
+     * @return ModelConnection
      */
-    public function _addToSaveList(DomainObject $Object)
+    public function getModelConnection()
     {
-        $this->saveList[] = $Object;
-    }
-
-    /**
-     * Not to be used by application code.
-     *
-     * @param DomainObject $Object
-     */
-    public function _addToRemoveList(DomainObject $object)
-    {
-        $this->removeList[] = $object;
-    }
-
-    /**
-     * Not to be used by application code.
-     *
-     * @param Type $type
-     * @param $objectId
-     * @return array|null
-     */
-    public function _loadDomainObjectAttributes(Type $type, $objectId)
-    {
-        return Context::getPersistenceStore()->loadAttributes($objectId, $this->_getActiveView($type));
+        return $this->modelConnection;
     }
 
     /**
      * @param Type $type
      * @return TableView
      */
-    public function _getActiveView(Type $type)
+    public function getActiveView(Type $type)
     {
         if ($this->activeCommit && $this->activeCommit->getCommitIndex() != $this->getActiveBranch()->getCommitIndex()) {
             return $this->getSnapshot($this->activeCommit, $type);
@@ -181,10 +159,6 @@ class Domain
 
         $this->storeDiffs($branch, $branch->getCommitIndex());
 
-        foreach ($this->saveList as $object) {
-            $object->markAsSaved();
-        }
-
         $this->saveList = [];
 
         return $commit;
@@ -207,7 +181,7 @@ class Domain
         $objectTypeDiff = [];
         $types = [];
 
-        foreach ($this->saveList as $object) {
+        foreach ($this->modelConnection->getSaveList() as $object) {
 
             $typeId = $object->getType()->getId();
             $types[$typeId] = $object->getType();
@@ -224,9 +198,10 @@ class Domain
                 $objectTypeDiff[$typeId][] = new AttributeValuesChanged($object->getId(), $changedValues);
 
             }
-        }
 
-        foreach ($this->removeList as $object) {
+            $object->markAsSaved();
+        }
+        foreach ($this->modelConnection->getRemoveList() as $object) {
 
             $typeId = $object->getType()->getId();
             $types[$typeId] = $object->getType();

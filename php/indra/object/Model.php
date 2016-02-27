@@ -7,7 +7,7 @@ use indra\service\Domain;
 /**
  * @author Patrick van Bergen
  */
-class Model
+abstract class Model
 {
     /** @var  Domain */
     protected $domain;
@@ -16,4 +16,9 @@ class Model
     {
         $this->domain = $domain;
     }
+
+    /**
+     * @return Type
+     */
+    protected abstract function getType();
 }

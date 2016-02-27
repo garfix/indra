@@ -26,7 +26,7 @@ class {{ className }} extends Model
 
     public function save{{ typeName }}({{ typeName }} $object)
     {
-        $this->domain->_addToSaveList($object);
+        $this->domain->getModelConnection()->addToSaveList($object);
     }
 
     /**
@@ -37,22 +37,22 @@ class {{ className }} extends Model
      */
     public function load{{ typeName }}($objectId)
     {
-        $attributes = $this->domain->_loadDomainObjectAttributes($this->getType(), $objectId);
+        $attributes = Context::getPersistenceStore()->loadAttributes($objectId, $this->domain->getActiveView($this->getType()));
         $object = new {{ typeName }}($this->getType(), $objectId, $attributes);
         return $object;
     }
 
     public function remove{{ typeName }}({{ typeName }} $object)
     {
-        $this->domain->_addToRemoveList($object);
+        $this->domain->getModelConnection()->addToRemoveList($object);
     }
 
     public function get{{ typeName }}Table()
     {
-        return $this->domain->_getActiveView($this->getType())->getTableName();
+        return $this->domain->getActiveView($this->getType())->getTableName();
     }
 
-    private function getType()
+    protected function getType()
     {
         return $this->type ?: $this->type = new {{ typeClassName }};
     }
