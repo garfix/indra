@@ -85,7 +85,7 @@ class CheckoutTest extends Base
 
         $specialCommit = $domain->commit("Change of addresses - branch 1");
 
-        $c1->setAddress("Baker straat 221b");
+        $c1->setAddress("Baker street 221b");
         $model->saveCustomer($c1);
         $c2->setAddress("Cherry blossoms 100");
         $model->saveCustomer($c2);

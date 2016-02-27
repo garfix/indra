@@ -109,6 +109,8 @@ class Domain
     }
 
     /**
+     * This function allows models to interact with the Domain. Do not use it in application code.
+     *
      * @return ModelConnection
      */
     public function getModelConnection()
@@ -136,30 +138,17 @@ class Domain
      */
     public function commit($commitDescription)
     {
-        $persistenceStore = Context::getPersistenceStore();
         $branch = $this->getActiveBranch();
 
         if (!$this->allowCommit()) {
             throw CommitNotAllowedException::getOldCommit();
         }
 
-        $branch->increaseCommitIndex();
+        // create commit and update branch
+        $commit = $this->createCommit($branch, $commitDescription);
 
-        $dateTime = Context::getDateTimeGenerator()->getDateTime();
-        $userName = Context::getUserNameProvider()->getUserName();
-
-        // create a new commit
-        $commit = new Commit($branch->getBranchId(), $branch->getCommitIndex(), $commitDescription, $userName, $dateTime->format('Y-m-d H:i:s'));
-
-        // store the commit
-        $persistenceStore->storeCommit($commit);
-
-        // store the branch
-        $persistenceStore->storeBranch($branch);
-
-        $this->storeDiffs($branch, $branch->getCommitIndex());
-
-        $this->saveList = [];
+        // store all the staged changes of this commit
+        $this->storeChanges($branch);
 
         return $commit;
     }
@@ -171,12 +160,12 @@ class Domain
 
     /**
      * @param Branch $branch
-     * @param int $commitIndex
      */
-    private function storeDiffs(Branch $branch, $commitIndex)
+    private function storeChanges(Branch $branch)
     {
         $persistenceStore = Context::getPersistenceStore();
         $branchId = $branch->getBranchId();
+        $commitIndex = $branch->getCommitIndex();
 
         $objectTypeDiff = [];
         $types = [];
@@ -201,6 +190,7 @@ class Domain
 
             $object->markAsSaved();
         }
+
         foreach ($this->modelConnection->getRemoveList() as $object) {
 
             $typeId = $object->getType()->getId();
@@ -214,6 +204,9 @@ class Domain
             $objectTypeDiff[$typeId][] = new ObjectRemoved($object->getId(), $removedAttributeValues);
         }
 
+        $this->modelConnection->clear();
+
+        // store diffs per object type
         foreach ($objectTypeDiff as $typeId => $diffItems) {
 
             $dotCommit = new DomainObjectTypeCommit($branchId, $typeId, $commitIndex, $diffItems);
@@ -237,12 +230,16 @@ class Domain
 
         // if this branch has no view, or if it is used by other branches as well, create a new view
         if (!$branchView) {
+
             $branchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
             $persistenceStore->storeBranchView($branchView, $type);
+
         } elseif ($persistenceStore->getNumberOfBranchesUsingView($branchView) > 1) {
+
             $newBranchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
             $persistenceStore->cloneBranchView($newBranchView, $branchView);
             $branchView = $newBranchView;
+
         }
 
         foreach ($diffItems as $diffItem) {
@@ -266,19 +263,8 @@ class Domain
             return null;
         }
 
-        $target->increaseCommitIndex();
-
-        $dateTime = Context::getDateTimeGenerator()->getDateTime();
-        $userName = Context::getUserNameProvider()->getUserName();
-
-        // create a new commit
-        $mergeCommit = new Commit($target->getBranchId(), $target->getCommitIndex(), $commitDescription, $userName, $dateTime->format('Y-m-d H:i:s'));
-
-        // store the commit
-        $persistenceStore->storeCommit($mergeCommit);
-
-        // store the branch
-        $persistenceStore->storeBranch($target);
+        // create commit and update branch
+        $mergeCommit = $this->createCommit($target, $commitDescription);
 
         $sourceCommits = $this->findMergeableCommits($target, $source);
 
@@ -298,6 +284,31 @@ class Domain
         }
 
         return $mergeCommit;
+    }
+
+    /**
+     * @param Branch $branch
+     * @param $commitDescription
+     * @return Commit
+     */
+    private function createCommit(Branch $branch, $commitDescription)
+    {
+        $persistenceStore = Context::getPersistenceStore();
+
+        // update the branch
+        $branch->increaseCommitIndex();
+        $persistenceStore->storeBranch($branch);
+
+        $dateTime = Context::getDateTimeGenerator()->getDateTime();
+        $userName = Context::getUserNameProvider()->getUserName();
+
+        // create a new commit
+        $commit = new Commit($branch->getBranchId(), $branch->getCommitIndex(), $commitDescription, $userName, $dateTime->format('Y-m-d H:i:s'));
+
+        // store the commit
+        $persistenceStore->storeCommit($commit);
+
+        return $commit;
     }
 
     /**
@@ -438,21 +449,10 @@ class Domain
     public function revertCommit(Commit $commit)
     {
         $persistenceStore = Context::getPersistenceStore();
-
         $branch = Context::getPersistenceStore()->loadBranch($commit->getBranchId());
-        $branch->increaseCommitIndex();
-
         $diffService = new DiffService();
 
-        $reason = sprintf("Undo commit %s (%s)", $commit->getCommitIndex(), $commit->getReason());
-        $userName = Context::getUserNameProvider()->getUserName();
-        $dateTime = Context::getDateTimeGenerator()->getDateTime();
-
-        $undoCommit = new Commit($branch->getBranchId(), $branch->getCommitIndex(), $reason, $userName, $dateTime->format('Y-m-d H:i:s'), null, null);
-        $persistenceStore->storeCommit($undoCommit);
-
-        // store the branch
-        $persistenceStore->storeBranch($branch);
+        $undoCommit = $this->createCommit($branch, sprintf("Undo commit %s (%s)", $commit->getCommitIndex(), $commit->getReason()));
 
         foreach ($persistenceStore->getDomainObjectTypeCommits($commit) as $domainObjectTypeCommit) {
 
@@ -526,5 +526,10 @@ class Domain
         if ($this->activeBranch->getBranchId() != $commit->getBranchId()) {
             $this->activeBranch = Context::getPersistenceStore()->loadBranch($commit->getBranchId());
         }
+    }
+
+    public function rebaseBranch($branch)
+    {
+
     }
 }

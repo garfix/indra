@@ -46,4 +46,13 @@ class ModelConnection
     {
         $this->removeList[] = $object;
     }
+
+    /**
+     * Clear the change lists.
+     */
+    public function clear()
+    {
+        $this->saveList = [];
+        $this->removeList = [];
+    }
 }
