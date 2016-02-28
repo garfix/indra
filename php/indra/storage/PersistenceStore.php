@@ -142,4 +142,9 @@ interface PersistenceStore
      * @return Commit
      */
     public function getCommit($commitId);
+
+    /**
+     * @return void
+     */
+    public function removeAllSnapshots();
 }

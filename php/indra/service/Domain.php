@@ -237,4 +237,9 @@ class Domain
 
         return $snapshot;
     }
+
+    public function removeAllSnapshots()
+    {
+        Context::getPersistenceStore()->removeAllSnapshots();
+    }
 }

@@ -572,4 +572,24 @@ class MySqlPersistenceStore implements PersistenceStore
 
         return $values;
     }
+
+    /**
+     * @return void
+     */
+    public function removeAllSnapshots()
+    {
+        $db = Context::getDB();
+
+        $rows = $db->queryMultipleRows("SELECT commit_id, type_id, view_id FROM indra_snapshot");
+
+        foreach ($rows as $row) {
+
+            $snapshot = new Snapshot($row['commit_id'], $row['type_id'], $row['view_id']);
+
+            if (!Context::inTestMode()) {
+
+                $db->execute("DROP TABLE " . $snapshot->getTableName());
+            }
+        }
+    }
 }
