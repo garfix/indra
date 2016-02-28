@@ -358,7 +358,11 @@ class MySqlPersistenceStore implements PersistenceStore
 
         // if this is last branch view using the table, drop it
         if ($this->getNumberOfBranchesUsingView($branchView) == 1) {
-            $db->execute("DROP TABLE " . $branchView->getTableName());
+
+            // drop table stops running transactions
+            if (!Context::inTestMode()) {
+                $db->execute("DROP TABLE " . $branchView->getTableName());
+            }
         }
 
         $db->execute("
