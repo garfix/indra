@@ -4,6 +4,7 @@ namespace indra\process;
 
 use indra\service\Context;
 use indra\storage\Branch;
+use indra\storage\Commit;
 
 /**
  * @author Patrick van Bergen
@@ -28,12 +29,21 @@ class Rebase extends VersionControlProcess
         }
 
         // find the commits since source split off
-        $newCommits = $this->findDivergingCommits($source, $target);
+        $divergingCommits = $this->findDivergingCommits($source, $target);
 
-        // change the mother branch of $target
-        $target->setMotherBranchId($source->getBranchId());
-        $persistenceStore->storeBranch($target);
+        // rebase the diverging commits to the head of the source branch
+        if (!empty($divergingCommits)) {
+            /** @var Commit $firstCommit */
+            $firstCommit = reset($divergingCommits);
+            $firstCommit->setMotherCommitId($source->getCommitId());
+            $persistenceStore->updateMotherCommitId($firstCommit);
+        }
 
-        // update the commits
+        // target drops its old views and copies source's views
+        $persistenceStore->removeBranchViews($target);
+        $persistenceStore->copyBranchViews($source, $target);
+
+        // the divergent commits are played on top of the new branch
+        $this->performCommitsOnBranchViews($target, $divergingCommits);
     }
 }

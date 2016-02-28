@@ -41,8 +41,11 @@ class Domain
      */
     public function checkoutNewBranch()
     {
+        $motherBranch = $this->getActiveBranch();
+
         $newBranch = new Branch(Context::getIdGenerator()->generateId());
-        Context::getPersistenceStore()->createBranch($newBranch, $this->getActiveBranch());
+        $newBranch->setCommitId($motherBranch->getCommitId());
+        Context::getPersistenceStore()->copyBranchViews($motherBranch, $newBranch);
 
         $this->checkoutBranch($newBranch);
         return $newBranch;

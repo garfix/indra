@@ -132,6 +132,23 @@ class MySqlPersistenceStore implements PersistenceStore
         ");
     }
 
+    /**
+     * @param Commit $commit
+     * @throws DataBaseException
+     */
+    public function updateMotherCommitId(Commit $commit)
+    {
+        $db = Context::getDB();
+
+        $db->execute("
+            UPDATE `indra_commit`
+            SET
+                `mother_commit_id` = '" . $commit->getMotherCommitId() . "'
+            WHERE
+                `commit_id` = '" . $commit->getCommitId() . "'
+        ");
+    }
+
     public function getCommit($commitId)
     {
         $db = Context::getDB();
@@ -314,6 +331,53 @@ class MySqlPersistenceStore implements PersistenceStore
     }
 
     /**
+     * @param string $branchId
+     * @return BranchView[]
+     * @throws DataBaseException
+     */
+    private function getBranchViews($branchId)
+    {
+        $db = Context::getDB();
+
+        $branchViewData = $db->queryMultipleRows("
+            SELECT type_id, view_id
+            FROM indra_branch_view
+            WHERE branch_id = '" . $branchId . "'");
+
+        $branchViews = [];
+        foreach ($branchViewData as $branchViewRow) {
+            $branchViews[] = new BranchView($branchId, $branchViewRow['type_id'], $branchViewRow['view_id']);
+        }
+
+        return $branchViews;
+    }
+
+    private function removeBranchView(BranchView $branchView)
+    {
+        $db = Context::getDB();
+
+        // if this is last branch view using the table, drop it
+        if ($this->getNumberOfBranchesUsingView($branchView) == 1) {
+            $db->execute("DROP TABLE " . $branchView->getTableName());
+        }
+
+        $db->execute("
+          DELETE FROM indra_branch_view
+          WHERE branch_id = '" . $branchView->getBranchId() . "' AND type_id = '" . $branchView->getTypeId() . "'");
+
+    }
+
+    /**
+     * @param Branch $branch
+     */
+    public function removeBranchViews(Branch $branch)
+    {
+        foreach ($this->getBranchViews($branch->getBranchId()) as $branchView) {
+            $this->removeBranchView($branchView);
+        }
+    }
+
+    /**
      * @param Commit $commit
      * @param string $typeId
      * @return Snapshot|null
@@ -473,7 +537,7 @@ class MySqlPersistenceStore implements PersistenceStore
         }
     }
 
-    public function createBranch(Branch $branch, Branch $motherBranch)
+    public function copyBranchViews(Branch $motherBranch, Branch $branch)
     {
         $db = Context::getDB();
 

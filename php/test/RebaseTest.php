@@ -41,15 +41,15 @@ class RebaseTest extends  \Base
         $this->assertSame('Sally', $d2->getName());
 
         // insert all commits of master since the departure before the new commits of specialBranch
-        $domain->rebaseBranch($specialBranch);
+        $domain->rebaseBranch($domain->getMasterBranch());
 
-//        // post test
-//        $e1 = $model->loadCustomer($c1->getId());
-//        $e2 = $model->loadCustomer($c2->getId());
-//        $this->assertSame('Holy Oak 29', $e1->getAddress());
-//        $this->assertSame('Cherry blossoms 100', $e2->getAddress());
-//        $this->assertSame('Harry', $e1->getName());
-//        $this->assertSame('Barry', $e2->getName());
+        // post test
+        $e1 = $model->loadCustomer($c1->getId());
+        $e2 = $model->loadCustomer($c2->getId());
+        $this->assertSame('Baker street 221b', $e1->getAddress());
+        $this->assertSame('Cherry blossoms 100', $e2->getAddress());
+        $this->assertSame('Harry', $e1->getName());
+        $this->assertSame('Barry', $e2->getName());
    }
 
     private function setupFixture(Domain $domain, CustomerModel $model)

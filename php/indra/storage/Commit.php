@@ -43,6 +43,16 @@ class Commit
     }
 
     /**
+     * Only used by Rebase
+     *
+     * @return string
+     */
+    public function setMotherCommitId($commitId)
+    {
+        $this->motherCommitId = $commitId;
+    }
+
+    /**
      * @return mixed
      */
     public function getReason()

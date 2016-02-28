@@ -39,6 +39,12 @@ interface PersistenceStore
     public function storeCommit(Commit $commit);
 
     /**
+     * @param Commit $commit
+     * @throws DataBaseException
+     */
+    public function updateMotherCommitId(Commit $commit);
+
+    /**
      * @param Branch $branch
      * @return void
      */
@@ -80,6 +86,11 @@ interface PersistenceStore
      * @throws DataBaseException
      */
     public function getBranchView($branchId, $typeId);
+
+    /**
+     * @param Branch $branch
+     */
+    public function removeBranchViews(Branch $branch);
 
     /**
      * @param Commit $commit
@@ -124,7 +135,7 @@ interface PersistenceStore
      * @param Branch $branch
      * @param Branch $motherBranch
      */
-    public function createBranch(Branch $branch, Branch $motherBranch);
+    public function copyBranchViews(Branch $motherBranch, Branch $branch);
 
     /**
      * @param int $commitId

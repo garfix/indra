@@ -1,6 +1,7 @@
 <?php
 
 namespace indra\storage;
+use indra\diff\DiffItem;
 
 /**
  * @author Patrick van Bergen
@@ -36,6 +37,9 @@ class DomainObjectTypeCommit
         return $this->typeId;
     }
 
+    /**
+     * @return DiffItem[]
+     */
     public function getDiffItems()
     {
         return $this->diffItems;

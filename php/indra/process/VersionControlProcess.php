@@ -100,6 +100,35 @@ abstract class VersionControlProcess
 
         }
 
-        return $resultCommits;
+        return array_reverse($resultCommits);
+    }
+
+    /**
+     * @param Branch $branch
+     * @param Commit[] $commits
+     */
+    protected function performCommitsOnBranchViews(Branch $branch, array $commits)
+    {
+        foreach ($commits as $commit) {
+            $this->performCommitOnBranchViews($branch, $commit);
+        }
+    }
+
+    /**
+     * @param Branch $branch
+     * @param Commit $commit
+     */
+    protected function performCommitOnBranchViews(Branch $branch, Commit $commit)
+    {
+        $persistenceStore = Context::getPersistenceStore();
+
+        foreach ($persistenceStore->getDomainObjectTypeCommits($commit) as $dotCommit) {
+
+            $branchView = $persistenceStore->getBranchView($branch->getBranchId(), $dotCommit->getTypeId());
+
+            foreach ($dotCommit->getDiffItems() as $diffItem) {
+                $persistenceStore->processDiffItem($branchView, $diffItem);
+            }
+        }
     }
 }
