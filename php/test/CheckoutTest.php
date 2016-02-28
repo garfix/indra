@@ -23,10 +23,12 @@ class CheckoutTest extends Base
         $domain = new Domain();
         $model = new CustomerModel($domain);
 
+//        \indra\service\Context::getDB()->setEchoQueries(true);
+
         /** @var Customer $c1 */
         /** @var Customer $c2 */
         /** @var Commit $specialCommit */
-        list($c1, $c2, $specialCommit) = $this->setupFixture($domain, $model);
+        list($c1, $c2, $specialBranch, $specialCommit) = $this->setupFixture($domain, $model);
 
         // pre-test
         $d1 = $model->loadCustomer($c1->getId());
@@ -35,9 +37,10 @@ class CheckoutTest extends Base
         $this->assertSame('Church field 1', $d2->getAddress());
 
         // check out some non-final commit of another branch
-        $domain->checkoutCommit($specialCommit);
+        $domain->checkoutBranchCommit($specialBranch, $specialCommit);
 
         // post test
+
         $e1 = $model->loadCustomer($c1->getId());
         $e2 = $model->loadCustomer($c2->getId());
         $this->assertSame('Springs fall 222', $e1->getAddress());
@@ -76,7 +79,7 @@ class CheckoutTest extends Base
 
         // do some changes in a new branch
 
-        $domain->checkoutNewBranch();
+        $specialBranch = $domain->checkoutNewBranch();
 
         $c1->setAddress("Springs fall 222");
         $model->saveCustomer($c1);
@@ -103,6 +106,6 @@ class CheckoutTest extends Base
 
         $domain->commit("Change of addresses - master 2");
 
-        return [$c1, $c2, $specialCommit];
+        return [$c1, $c2, $specialBranch, $specialCommit];
     }
 }

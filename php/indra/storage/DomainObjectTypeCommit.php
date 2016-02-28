@@ -7,28 +7,25 @@ namespace indra\storage;
  */
 class DomainObjectTypeCommit
 {
-    private $branchId;
+    private $commitId;
 
     private $typeId;
 
-    private $commitIndex;
-
     private $diffItems = [];
 
-    public function __construct($branchId, $typeId, $commitIndex, array $diffItems)
+    public function __construct($commitId, $typeId, array $diffItems)
     {
-        $this->branchId = $branchId;
+        $this->commitId = $commitId;
         $this->typeId = $typeId;
-        $this->commitIndex = $commitIndex;
         $this->diffItems = $diffItems;
     }
 
     /**
      * @return string
      */
-    public function getBranchId()
+    public function getCommitId()
     {
-        return $this->branchId;
+        return $this->commitId;
     }
 
     /**
@@ -37,14 +34,6 @@ class DomainObjectTypeCommit
     public function getTypeId()
     {
         return $this->typeId;
-    }
-
-    /**
-     * @return int
-     */
-    public function getCommitIndex()
-    {
-        return $this->commitIndex;
     }
 
     public function getDiffItems()

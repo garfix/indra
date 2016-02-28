@@ -7,12 +7,6 @@ namespace indra\storage;
  */
 interface TableView
 {
-
-    /**
-     * @return string
-     */
-    public function getBranchId();
-
     /**
      * @return string
      */

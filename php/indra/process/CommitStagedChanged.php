@@ -45,8 +45,7 @@ class CommitStagedChanged extends VersionControlProcess
     private function storeChanges(Branch $branch, ModelConnection $modelConnection)
     {
         $persistenceStore = Context::getPersistenceStore();
-        $branchId = $branch->getBranchId();
-        $commitIndex = $branch->getCommitIndex();
+        $commitId = $branch->getCommitId();
 
         $objectTypeDiff = [];
         $types = [];
@@ -88,7 +87,7 @@ class CommitStagedChanged extends VersionControlProcess
         // store diffs per object type
         foreach ($objectTypeDiff as $typeId => $diffItems) {
 
-            $dotCommit = new DomainObjectTypeCommit($branchId, $typeId, $commitIndex, $diffItems);
+            $dotCommit = new DomainObjectTypeCommit($commitId, $typeId, $diffItems);
 
             $persistenceStore->storeDomainObjectTypeCommit($dotCommit);
 

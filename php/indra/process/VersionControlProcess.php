@@ -20,18 +20,18 @@ abstract class VersionControlProcess
     {
         $persistenceStore = Context::getPersistenceStore();
 
-        // update the branch
-        $branch->increaseCommitIndex();
-        $persistenceStore->storeBranch($branch);
-
+        $commitId = Context::getIdGenerator()->generateId();
+        $motherCommitId = $branch->getCommitId();
         $dateTime = Context::getDateTimeGenerator()->getDateTime();
         $userName = Context::getUserNameProvider()->getUserName();
 
         // create a new commit
-        $commit = new Commit($branch->getBranchId(), $branch->getCommitIndex(), $commitDescription, $userName, $dateTime->format('Y-m-d H:i:s'));
-
-        // store the commit
+        $commit = new Commit($commitId, $motherCommitId, $commitDescription, $userName, $dateTime->format('Y-m-d H:i:s'));
         $persistenceStore->storeCommit($commit);
+
+        // update the branch
+        $branch->setCommitId($commitId);
+        $persistenceStore->storeBranch($branch);
 
         return $commit;
     }
@@ -46,122 +46,60 @@ abstract class VersionControlProcess
     {
         $persistenceStore = Context::getPersistenceStore();
 
-        /** @var Branch[] $parentBranches */
-        list($parentBranches, $finalCommitId) = $this->findMergeableBranchList($base, $divergent);
+        /** @var Commit[] $baseCommits */
+        $baseCommits = [];
+        /** @var Commit[] $divergentCommits */
+        $divergentCommits = [];
 
-        $commits = [];
+        $baseCommitId = $base->getCommitId();
+        $divergentCommitId = $divergent->getCommitId();
 
-        $lastCommitIndex = $parentBranches[0]->getCommitIndex();
-        $lastBranchIndex = (count($parentBranches) - 1);
+        $commonCommitId = null;
 
-        foreach ($parentBranches as $p => $parentBranch) {
+        do {
 
-            $isLastBranch = ($p == $lastBranchIndex);
+            if ($baseCommitId != null) {
 
-            if ($isLastBranch) {
-                // the final commit itself should not be reached
-                $firstCommitIndex = $finalCommitId + 1;
-            } else {
-                $firstCommitIndex = 1;
+                $baseCommit = $persistenceStore->getCommit($baseCommitId);
+                $baseCommits[$baseCommitId] = $baseCommit;
+
+                // common commit found?
+                if (array_key_exists($baseCommitId, $divergentCommits)) {
+                    $commonCommitId = $baseCommitId;
+                    break;
+                }
+
+                $baseCommitId = $baseCommit->getMotherCommitId();
             }
 
-            for ($i = $lastCommitIndex; $i >= $firstCommitIndex; $i--) {
-                $commits[] = $persistenceStore->getCommit($parentBranch->getBranchId(), $i);
+            if ($divergentCommitId != null) {
+
+                $divergentCommit = $persistenceStore->getCommit($divergentCommitId);
+                $divergentCommits[$divergentCommitId] = $divergentCommit;
+
+                // common commit found?
+                if (array_key_exists($divergentCommitId, $baseCommits)) {
+                    $commonCommitId = $divergentCommitId;
+                    break;
+                }
+
+                $divergentCommitId = $divergentCommit->getMotherCommitId();
             }
 
-            $lastCommitIndex = $parentBranch->getMotherCommitIndex();
+        } while ($baseCommitId != null || $divergentCommitId != null);
+
+        // create the cleaned up list of divergent commits
+        $resultCommits = [];
+        $commitId = $divergent->getCommitId();
+
+        while ($commitId != $commonCommitId) {
+
+            $commit = $divergentCommits[$commitId];
+            $resultCommits[] = $commit;
+            $commitId = $commit->getMotherCommitId();
+
         }
 
-        $commits = array_reverse($commits);
-
-        return $commits;
-    }
-
-    /**
-     * @param Branch $target
-     * @param Branch $source
-     * @return array [Branch[], int]
-     * @throws \Exception
-     */
-    private function findMergeableBranchList(Branch $target, Branch $source)
-    {
-        $persistenceStore = Context::getPersistenceStore();
-
-        /** @var Branch[] $sourceParents */
-        $sourceParents = [$source];
-        /** @var Branch[] $targetParents */
-        $targetParents = [$target];
-
-        $sourceParentIds = [$source->getBranchId()];
-        $targetParentIds = [$target->getBranchId()];
-
-        while ($target->getMotherBranchId() || $source->getMotherBranchId()) {
-
-            // repeat until both the source route and the target route have reached a common branch
-            if (in_array($source->getBranchId(), $targetParentIds) && in_array($target->getBranchId(), $sourceParentIds)) {
-                break;
-            }
-
-            // take the next branches up
-            if ($target->getMotherBranchId()) {
-                $target = $persistenceStore->loadBranch($target->getMotherBranchId());
-                $targetParents[] = $target;
-                $targetParentIds[] = $target->getBranchId();
-            }
-
-            if ($source->getMotherBranchId()) {
-                $source = $persistenceStore->loadBranch($source->getMotherBranchId());
-                $sourceParents[] = $source;
-                $sourceParentIds[] = $source->getBranchId();
-            }
-        }
-
-        $finalSourceCommitId = null;
-        $finalTargetCommitId = null;
-
-        $check1 = false;
-        $check2 = false;
-
-        // go up the source path until the target path is reached, and collect the branches
-        $mergeableBranchList = [];
-        foreach ($sourceParents as $sourceParent) {
-
-            // collect
-            $mergeableBranchList[] = $sourceParent;
-
-            // has the source path reached the target path?
-            if (in_array($sourceParent->getBranchId(), $targetParentIds)) {
-                $check1 = true;
-                break;
-            } else {
-                // no: move the final commit up
-                $finalSourceCommitId = $sourceParent->getMotherCommitIndex();
-            }
-        }
-
-        $finalTargetCommitId = null;
-        foreach ($targetParents as $targetParent) {
-            // has the target path reached the source path?
-            if (in_array($targetParent->getBranchId(), $sourceParentIds)) {
-                $check2 = true;
-                break;
-            } else {
-                // no: move the final commit up
-                $finalTargetCommitId = $targetParent->getMotherCommitIndex();
-            }
-        }
-
-        if (!$check1 || !$check2) {
-            throw new \Exception('Check failed');
-        }
-
-        // the merge should go up to the first commit where the paths split
-        if ($finalTargetCommitId !== null) {
-            $finalCommitId = min($finalSourceCommitId, $finalTargetCommitId);
-        } else {
-            $finalCommitId = $finalSourceCommitId;
-        }
-
-        return [$mergeableBranchList, $finalCommitId];
+        return $resultCommits;
     }
 }

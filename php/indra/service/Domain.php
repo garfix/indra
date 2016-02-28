@@ -2,10 +2,6 @@
 
 namespace indra\service;
 
-use indra\diff\AttributeValuesChanged;
-use indra\diff\DiffItem;
-use indra\diff\ObjectAdded;
-use indra\diff\ObjectRemoved;
 use indra\exception\CommitNotAllowedException;
 use indra\object\ModelConnection;
 use indra\object\Type;
@@ -14,10 +10,8 @@ use indra\process\Merge;
 use indra\process\Rebase;
 use indra\process\Revert;
 use indra\storage\Branch;
-use indra\storage\BranchView;
 use indra\storage\Commit;
 use indra\storage\DiffService;
-use indra\storage\DomainObjectTypeCommit;
 use indra\storage\Snapshot;
 use indra\storage\TableView;
 
@@ -47,10 +41,8 @@ class Domain
      */
     public function checkoutNewBranch()
     {
-        $existingBranch = $this->getActiveBranch();
-
-        $newBranch = new Branch(Context::getIdGenerator()->generateId(), $existingBranch->getBranchId(), $existingBranch->getCommitIndex());
-        Context::getPersistenceStore()->createBranch($newBranch);
+        $newBranch = new Branch(Context::getIdGenerator()->generateId());
+        Context::getPersistenceStore()->createBranch($newBranch, $this->getActiveBranch());
 
         $this->checkoutBranch($newBranch);
         return $newBranch;
@@ -65,6 +57,24 @@ class Domain
     {
         $this->activeBranch = $branch;
         $this->activeCommit = null;
+    }
+
+    /**
+     * Checkout out a commit that lies on a given branch.
+     *
+     * @param Branch $branch
+     * @param Commit $commit
+     */
+    public function checkoutBranchCommit(Branch $branch, Commit $commit)
+    {
+        $this->activeBranch = $branch;
+        $this->activeCommit = $commit;
+    }
+
+    public function rebaseBranch(Branch $source)
+    {
+        $rebase = new Rebase();
+        $rebase->run($this->getActiveBranch(), $source);
     }
 
     /**
@@ -103,13 +113,12 @@ class Domain
     }
 
     /**
-     * @param string $branchId Indra-id
-     * @param int $commitIndex
+     * @param $commitId
      * @return Commit
      */
-    public function getCommitById($branchId, $commitIndex)
+    public function getCommitById($commitId)
     {
-        return Context::getPersistenceStore()->getCommit($branchId, $commitIndex);
+        return Context::getPersistenceStore()->getCommit($commitId);
     }
 
     /**
@@ -128,8 +137,8 @@ class Domain
      */
     public function getActiveView(Type $type)
     {
-        if ($this->activeCommit && $this->activeCommit->getCommitIndex() != $this->getActiveBranch()->getCommitIndex()) {
-            return $this->getSnapshot($this->activeCommit, $type);
+        if ($this->activeCommit) {
+            return $this->getSnapshot($this->activeBranch, $this->activeCommit, $type);
         } else {
             return Context::getPersistenceStore()->getBranchView($this->getActiveBranch()->getBranchId(), $type->getId());
         }
@@ -156,7 +165,7 @@ class Domain
      */
     private function allowCommit()
     {
-        return !$this->activeCommit || ($this->activeCommit->getCommitIndex() == $this->getActiveBranch()->getCommitIndex());
+        return !$this->activeCommit;
     }
 
     /**
@@ -184,28 +193,28 @@ class Domain
         return $undoCommit;
     }
 
-    private function getSnapshot(Commit $commit, Type $type)
+    private function getSnapshot(Branch $branch, Commit $commit, Type $type)
     {
         $snapshot = Context::getPersistenceStore()->loadSnapshot($commit, $type->getId());
         if (!$snapshot) {
-            $snapshot =  $this->createSnapshot($commit, $type);
+            $snapshot =  $this->createSnapshot($branch, $commit, $type);
         }
         return $snapshot;
     }
 
-    private function createSnapshot(Commit $commit, Type $type)
+    private function createSnapshot(Branch $branch, Commit $commit, Type $type)
     {
         $diffService = new DiffService();
         $persistenceStore = Context::getPersistenceStore();
 
-        $snapshot = new Snapshot($commit->getBranchId(), $commit->getCommitIndex(), $type->getId(), Context::getIdGenerator()->generateId());
+        $snapshot = new Snapshot($commit->getCommitId(), $type->getId(), Context::getIdGenerator()->generateId());
         $persistenceStore->storeSnapshot($snapshot, $persistenceStore->getBranchView($this->getActiveBranch()->getBranchId(), $type->getId()));
 
-        $branch = $this->activeBranch;
+        $commitId = $branch->getCommitId();
 
-        for ($i = $branch->getCommitIndex(); $i > $commit->getCommitIndex(); $i--) {
+        while ($commitId != null && $commitId != $commit->getCommitId()) {
 
-            $inBetweenCommit = Context::getPersistenceStore()->getCommit($branch->getBranchId(), $i);
+            $inBetweenCommit = Context::getPersistenceStore()->getCommit($commitId);
 
             foreach (Context::getPersistenceStore()->getDomainObjectTypeCommitsForType($inBetweenCommit, $type) as $domainObjectTypeCommit) {
 
@@ -219,24 +228,10 @@ class Domain
                     $persistenceStore->processDiffItem($snapshot, $diffItem);
                 }
             }
+
+            $commitId = $inBetweenCommit->getMotherCommitId();
         }
 
         return $snapshot;
-    }
-
-    public function checkoutCommit(Commit $commit)
-    {
-        $this->activeCommit = $commit;
-
-        // switch to the branch of the commit
-        if ($this->activeBranch->getBranchId() != $commit->getBranchId()) {
-            $this->activeBranch = Context::getPersistenceStore()->loadBranch($commit->getBranchId());
-        }
-    }
-
-    public function rebaseBranch(Branch $source)
-    {
-        $rebase = new Rebase();
-        $rebase->run($this->getActiveBranch(), $source);
     }
 }

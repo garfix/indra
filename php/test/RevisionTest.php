@@ -34,8 +34,8 @@ class RevisionTest extends Base
         $customerModel->saveCustomer($customer);
         $commit = $domain->commit('Dr. Jones renamed to Dr. Who');
 
-        $commitIndex = $commit->getCommitIndex();
-        $commit = $domain->getCommitById($domain->getMasterBranch()->getBranchId(), $commitIndex);
+        $commitId = $commit->getCommitId();
+        $commit = $domain->getCommitById($commitId);
 
         $undoCommit = $domain->revertCommit($commit);
 

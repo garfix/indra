@@ -43,7 +43,7 @@ class Merge extends VersionControlProcess
                 }
 
                 // add the diffs of the commit
-                $newDotCommit = new DomainObjectTypeCommit($target->getBranchId(), $dotCommit->getTypeId(), $mergeCommit->getCommitIndex(), $dotCommit->getDiffItems());
+                $newDotCommit = new DomainObjectTypeCommit($target->getCommitId(), $dotCommit->getTypeId(), $dotCommit->getDiffItems());
                 $persistenceStore->storeDomainObjectTypeCommit($newDotCommit);
             }
         }

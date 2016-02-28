@@ -20,7 +20,7 @@ class RebaseTest extends  \Base
         parent::createCustomerType();
     }
 
-    public function testMerge()
+    public function testRebase()
     {
         $domain = new Domain();
         $model = new CustomerModel($domain);

@@ -24,7 +24,7 @@ class Revert extends VersionControlProcess
         $persistenceStore = Context::getPersistenceStore();
         $diffService = new DiffService();
 
-        $undoCommit = $this->createCommit($branch, sprintf("Undo commit %s (%s)", $commit->getCommitIndex(), $commit->getReason()));
+        $undoCommit = $this->createCommit($branch, sprintf("Undo commit %s (%s)", $commit->getCommitId(), $commit->getReason()));
 
         foreach ($persistenceStore->getDomainObjectTypeCommits($commit) as $domainObjectTypeCommit) {
 
@@ -36,7 +36,7 @@ class Revert extends VersionControlProcess
                 $reversedDiffItems[] = $diffService->getReverseDiffItem($diffItem);
             }
 
-            $dotCommit = new DomainObjectTypeCommit($commit->getBranchId(), $typeId, $branch->getCommitIndex(), $reversedDiffItems);
+            $dotCommit = new DomainObjectTypeCommit($undoCommit->getCommitId(), $typeId, $reversedDiffItems);
 
             $persistenceStore->storeDomainObjectTypeCommit($dotCommit);
 

@@ -69,33 +69,28 @@ class MySqlPersistenceStore implements PersistenceStore
         $db->execute("
             CREATE TABLE IF NOT EXISTS indra_branch (
 					`branch_id`				    binary(22) not null,
-					`commit_index`              int not null,
-					`mother_branch_id`	        binary(22),
-					`mother_commit_index`       int,
+					`commit_id`                 binary(22) not null,
 					primary key (`branch_id`)
             ) engine InnoDB
         ");
 
         $db->execute("
             CREATE TABLE IF NOT EXISTS indra_commit (
-					`branch_id`				    binary(22) not null,
-					`commit_index`              int not null,
+					`commit_id`				    binary(22) not null,
+					`mother_commit_id`          binary(22),
 					`reason`	                varchar(255),
 					`username`	                varchar(255),
 					`datetime`                  datetime,
-					`merge_branch_id`			binary(22) default null,
-					`merge_commit_index`        int default null,
-					primary key (`branch_id`, `commit_index`)
+					primary key (`commit_id`)
             ) engine InnoDB
         ");
 
         $db->execute("
             CREATE TABLE IF NOT EXISTS indra_commit_type (
-					`branch_id`				    binary(22) not null,
+					`commit_id`				    binary(22) not null,
 					`type_id`	                binary(22) not null,
-					`commit_index`              int not null,
 					`diff`                      longtext,
-					primary key (`branch_id`, `type_id`, `commit_index`)
+					primary key (`commit_id`, `type_id`)
             ) engine InnoDB
         ");
 
@@ -110,11 +105,10 @@ class MySqlPersistenceStore implements PersistenceStore
 
         $db->execute("
             CREATE TABLE IF NOT EXISTS indra_snapshot (
-					`branch_id`				    binary(22) not null,
-					`commit_index`			    int not null,
+					`commit_id`				    binary(22) not null,
 					`type_id`				    binary(22) not null,
 					`view_id`	                binary(22) not null,
-					primary key (`branch_id`, `commit_index`)
+					primary key (`commit_id`, `type_id`)
             ) engine InnoDB
         ");
     }
@@ -130,31 +124,40 @@ class MySqlPersistenceStore implements PersistenceStore
         $db->execute("
             INSERT INTO `indra_commit`
               SET
-                  `branch_id` = '" . $commit->getBranchId() . "',
-                  `commit_index` = '" . $commit->getCommitIndex() . "',
+                  `commit_id` = '" . $commit->getCommitId() . "',
+                  `mother_commit_id` = '" . $commit->getMotherCommitId() . "',
                   `reason` = '" . $commit->getReason() . "',
                   `username` = '" . $commit->getUserName() . "',
-                  `datetime` = '" . $commit->getDateTime() . "',
-                  `merge_branch_id` = '" . $commit->getMergeBranchId() . "',
-                  `merge_commit_index` = '" . $commit->getMergeCommitIndex() . "'
+                  `datetime` = '" . $commit->getDateTime() . "'
         ");
+    }
+
+    public function getCommit($commitId)
+    {
+        $db = Context::getDB();
+
+        $data = $db->querySingleRow("
+            SELECT * FROM`indra_commit`
+              WHERE
+                  `commit_id` = '" . $commitId . "'
+        ");
+
+        $commit = new Commit($commitId, $data['mother_commit_id'], $data['reason'], $data['username'], $data['datetime']);
+
+        return $commit;
     }
 
     public function storeBranch(Branch $branch)
     {
         $db = Context::getDB();
-        $motherBranchId = $branch->getMotherBranchId();
-        $motherCommitIndex = $branch->getMotherCommitIndex();
 
         $db->execute("
             INSERT INTO `indra_branch`
                 SET
                       `branch_id` = '" . $branch->getBranchId() . "',
-                      `commit_index` = '" . $branch->getCommitIndex() . "',
-                      `mother_branch_id` = " . ($motherBranchId ? "'" . $motherBranchId . "'" : 'null') . ",
-                      `mother_commit_index` = " . ($motherCommitIndex ? $motherCommitIndex : 'null') . "
+                      `commit_id` = '" . $branch->getCommitId() . "'
                 ON DUPLICATE KEY UPDATE
-                      `commit_index` = '" . $branch->getCommitIndex() . "'
+                      `commit_id` = '" . $branch->getCommitId() . "'
         ");
     }
 
@@ -163,15 +166,15 @@ class MySqlPersistenceStore implements PersistenceStore
         $db = Context::getDB();
 
         $branchData = $db->querySingleRow("
-            SELECT `commit_index`, `mother_branch_id`, `mother_commit_index`
+            SELECT `commit_id`
             FROM `indra_branch`
             WHERE `branch_id` = '" . $branchId . "'
         ");
 
         if ($branchData) {
 
-            $branch = new Branch($branchId, $branchData['mother_branch_id'], $branchData['mother_commit_index']);
-            $branch->setCommitIndex($branchData['commit_index']);
+            $branch = new Branch($branchId);
+            $branch->setCommitId($branchData['commit_id']);
 
             return $branch;
 
@@ -220,8 +223,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $db->execute("
             INSERT INTO `indra_commit_type`
                 SET
-                      `branch_id` = '" . $dotCommit->getBranchId() . "',
-                      `commit_index` = '" . $dotCommit->getCommitIndex() . "',
+                      `commit_id` = '" . $dotCommit->getCommitId() . "',
                       `type_id` = '" . $dotCommit->getTypeId() . "',
                       `diff` = '" . $diff . "'
         ");
@@ -234,7 +236,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $rows = $db->queryMultipleRows("
             SELECT type_id, diff
             FROM indra_commit_type
-            WHERE branch_id = '" . $commit->getBranchId() . "' AND commit_index = '" . $commit->getCommitIndex() . "'
+            WHERE commit_id = '" . $commit->getCommitId() . "'
         ");
 
         $serializer = new DiffService();
@@ -244,7 +246,7 @@ class MySqlPersistenceStore implements PersistenceStore
         foreach ($rows as $row) {
 
             $diffItems = $serializer->deserializeDiffItems($row['diff']);
-            $dotCommit = new DomainObjectTypeCommit($commit->getBranchId(), $row['type_id'], $commit->getCommitIndex(), $diffItems);
+            $dotCommit = new DomainObjectTypeCommit($commit->getCommitId(), $row['type_id'], $diffItems);
 
             $dotCommits[] = $dotCommit;
         }
@@ -264,7 +266,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $rows = $db->queryMultipleRows("
             SELECT type_id, diff
             FROM indra_commit_type
-            WHERE branch_id = '" . $commit->getBranchId() . "' AND commit_index = '" . $commit->getCommitIndex() . "' AND type_id = '" . $type->getId() . "'
+            WHERE commit_id = '" . $commit->getCommitId() . "' AND type_id = '" . $type->getId() . "'
         ");
 
         $serializer = new DiffService();
@@ -274,7 +276,7 @@ class MySqlPersistenceStore implements PersistenceStore
         foreach ($rows as $row) {
 
             $diffItems = $serializer->deserializeDiffItems($row['diff']);
-            $dotCommit = new DomainObjectTypeCommit($commit->getBranchId(), $type->getId(), $commit->getCommitIndex(), $diffItems);
+            $dotCommit = new DomainObjectTypeCommit($commit->getCommitId(), $type->getId(), $diffItems);
 
             $dotCommits[] = $dotCommit;
         }
@@ -321,16 +323,15 @@ class MySqlPersistenceStore implements PersistenceStore
     {
         $db = Context::getDB();
 
-        $branchId = $commit->getBranchId();
-        $commitIndex = $commit->getCommitIndex();
+        $commitId = $commit->getCommitId();
 
         $viewId = $db->querySingleCell("
             SELECT view_id
             FROM indra_snapshot
-            WHERE branch_id = '" . $branchId . "' AND commit_index = '" . $commitIndex . "' AND type_id = '" . $typeId . "'");
+            WHERE commit_id = '" . $commitId . "' AND type_id = '" . $typeId . "'");
 
         if ($viewId) {
-            $snapshot = new Snapshot($branchId, $commit, $typeId, $viewId);
+            $snapshot = new Snapshot($commitId, $typeId, $viewId);
         } else {
             $snapshot = null;
         }
@@ -358,8 +359,7 @@ class MySqlPersistenceStore implements PersistenceStore
 
         $db->execute("
             INSERT INTO indra_snapshot
-            SET branch_id = '" . $snapshot->getBranchId() . "',
-                commit_index = '" . $snapshot->getCommitIndex() . "',
+            SET commit_id = '" . $snapshot->getCommitId() . "',
                 type_id = '" . $snapshot->getTypeId() . "',
                 view_id = '" . $snapshot->getViewId() . "'
         ");
@@ -473,7 +473,7 @@ class MySqlPersistenceStore implements PersistenceStore
         }
     }
 
-    public function createBranch(Branch $branch)
+    public function createBranch(Branch $branch, Branch $motherBranch)
     {
         $db = Context::getDB();
 
@@ -482,24 +482,8 @@ class MySqlPersistenceStore implements PersistenceStore
             INSERT INTO indra_branch_view (branch_id, type_id, view_id)
             SELECT '" . $db->esc($branch->getBranchId()) . "', `type_id`, `view_id`
             FROM indra_branch_view
-            WHERE branch_id = '" . $db->esc($branch->getMotherBranchId()) . "'
+            WHERE branch_id = '" . $db->esc($motherBranch->getBranchId()) . "'
         ");
-    }
-
-    public function getCommit($branchId, $commitIndex)
-    {
-        $db = Context::getDB();
-
-        $data = $db->querySingleRow("
-            SELECT * FROM`indra_commit`
-              WHERE
-                  `branch_id` = '" . $branchId . "' AND
-                  `commit_index` = '" . $commitIndex . "'
-        ");
-
-        $commit = new Commit($branchId, $commitIndex, $data['reason'], $data['username'], $data['datetime'], $data['merge_branch_id'], $data['merge_commit_index']);
-
-        return $commit;
     }
 
     private function getMySqlDataType($dataType)

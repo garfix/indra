@@ -7,9 +7,9 @@ namespace indra\storage;
  */
 class Commit
 {
-    private $branchId;
+    private $commitId;
 
-    private $commitIndex;
+    private $motherCommitId;
 
     private $reason;
 
@@ -17,35 +17,29 @@ class Commit
 
     private $dateTime;
 
-    private $mergeBranchId;
-
-    private $mergeCommitIndex;
-
-    public function __construct($branchId, $commitIndex, $reason, $userName, $dateTime, $mergeBranchId = null, $mergeBranchIndex = null)
+    public function __construct($commitId, $motherCommitId, $reason, $userName, $dateTime)
     {
-        $this->branchId = $branchId;
-        $this->commitIndex = $commitIndex;
+        $this->commitId = $commitId;
+        $this->motherCommitId = $motherCommitId;
         $this->reason = $reason;
         $this->userName = $userName;
         $this->dateTime = $dateTime;
-        $this->mergeBranchId = $mergeBranchId;
-        $this->mergeCommitIndex = $mergeBranchIndex;
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getBranchId()
+    public function getCommitId()
     {
-        return $this->branchId;
+        return $this->commitId;
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getCommitIndex()
+    public function getMotherCommitId()
     {
-        return $this->commitIndex;
+        return $this->motherCommitId;
     }
 
     /**
@@ -70,21 +64,5 @@ class Commit
     public function getDateTime()
     {
         return $this->dateTime;
-    }
-
-    /**
-     * @return null
-     */
-    public function getMergeBranchId()
-    {
-        return $this->mergeBranchId;
-    }
-
-    /**
-     * @return null
-     */
-    public function getMergeCommitIndex()
-    {
-        return $this->mergeCommitIndex;
     }
 }

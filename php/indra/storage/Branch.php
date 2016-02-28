@@ -11,16 +11,11 @@ class Branch
 
     protected $branchId = null;
 
-    protected $commitIndex = 0;
+    protected $commitId = null;
 
-    /** @var Commit */
-    protected $motherCommitIndex = null;
-
-    public function __construct($branchId, $motherBranchId = null, $motherCommitIndex = null)
+    public function __construct($branchId)
     {
         $this->branchId = $branchId;
-        $this->motherBranchId = $motherBranchId;
-        $this->motherCommitIndex = $motherCommitIndex;
     }
 
     public function getBranchId()
@@ -28,34 +23,14 @@ class Branch
         return $this->branchId;
     }
 
-    public function getMotherBranchId()
+    public function getCommitId()
     {
-        return $this->motherBranchId;
+        return $this->commitId;
     }
 
-    public function setMotherBranchId($branchId)
+    public function setCommitId($commitId)
     {
-        $this->motherBranchId = $branchId;
-    }
-
-    public function getMotherCommitIndex()
-    {
-        return $this->motherCommitIndex;
-    }
-
-    public function setCommitIndex($commitIndex)
-    {
-        $this->commitIndex = $commitIndex;
-    }
-
-    public function getCommitIndex()
-    {
-        return $this->commitIndex;
-    }
-
-    public function increaseCommitIndex()
-    {
-        $this->commitIndex++;
+        $this->commitId = $commitId;
     }
 
     public function isMaster()

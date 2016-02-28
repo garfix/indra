@@ -122,15 +122,13 @@ interface PersistenceStore
 
     /**
      * @param Branch $branch
-     * @return void
-     * @throws DataBaseException
+     * @param Branch $motherBranch
      */
-    public function createBranch(Branch $branch);
+    public function createBranch(Branch $branch, Branch $motherBranch);
 
     /**
-     * @param string $branchId
-     * @param int $commitIndex
+     * @param int $commitId
      * @return Commit
      */
-    public function getCommit($branchId, $commitIndex);
+    public function getCommit($commitId);
 }

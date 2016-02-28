@@ -7,11 +7,8 @@ namespace indra\storage;
  */
 class Snapshot implements TableView
 {
-    /** @var  string */
-    private $branchId;
-
     /** @var  int */
-    private $commitIndex;
+    private $commitId;
 
     /** @var  string */
     private $typeId;
@@ -19,10 +16,9 @@ class Snapshot implements TableView
     /** @var  string */
     private $viewId;
 
-    public function __construct($branchId, $commitIndex, $typeId, $viewId)
+    public function __construct($commitId, $typeId, $viewId)
     {
-        $this->branchId = $branchId;
-        $this->commitIndex = $commitIndex;
+        $this->commitId = $commitId;
         $this->typeId = $typeId;
         $this->viewId = $viewId;
     }
@@ -30,17 +26,9 @@ class Snapshot implements TableView
     /**
      * @return string
      */
-    public function getBranchId()
+    public function getCommitId()
     {
-        return $this->branchId;
-    }
-
-    /**
-     * @return int
-     */
-    public function getCommitIndex()
-    {
-        return $this->commitIndex;
+        return $this->commitId;
     }
 
     /**
