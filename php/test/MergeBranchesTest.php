@@ -69,5 +69,26 @@ class MergeBranchesTest extends Base
         $customer4 = $customerModel->loadCustomer($customerId);
         $this->assertEquals('Dr. Who', $customer4->getName());
         $this->assertEquals('1971-09-23', $customer4->getBirthDate());
+
+        // make a change in new branch
+
+        $domain->checkoutBranch($branch);
+        $customer4 = $customerModel->loadCustomer($customerId);
+        $customer4->setBirthDate('1938-02-28');
+        $customerModel->saveCustomer($customer4);
+        $domain->commit('Changed customer\'s birthdate');
+
+        // merge again
+
+//        $domain->checkoutBranch($master);
+//        $branch = $domain->getBranchById($branchId);
+//        $domain->mergeBranch($branch, "Merge again");
+//
+//        // only the last commit should be reapplied, not the rest of the branch
+//
+//        $customer5 = $customerModel->loadCustomer($customerId);
+//        $this->assertEquals('Dr. Who', $customer5->getName());
+//        $this->assertEquals('1938-02-28', $customer5->getBirthDate());
+
     }
 }

@@ -30,7 +30,7 @@ class DB
     {
         $mysqli = Context::getMySqli();
 
-        return mysqli_real_escape_string($mysqli, $value);
+        return "'" . mysqli_real_escape_string($mysqli, $value) . "'";
     }
 
     /**

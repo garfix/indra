@@ -124,11 +124,11 @@ class MySqlPersistenceStore implements PersistenceStore
         $db->execute("
             INSERT INTO `indra_commit`
               SET
-                  `commit_id` = '" . $commit->getCommitId() . "',
-                  `mother_commit_id` = '" . $commit->getMotherCommitId() . "',
-                  `reason` = '" . $commit->getReason() . "',
-                  `username` = '" . $commit->getUserName() . "',
-                  `datetime` = '" . $commit->getDateTime() . "'
+                  `commit_id` = " . $db->esc($commit->getCommitId()) . ",
+                  `mother_commit_id` = " . $db->esc($commit->getMotherCommitId()) . ",
+                  `reason` = " . $db->esc($commit->getReason()) . ",
+                  `username` = " . $db->esc($commit->getUserName()) . ",
+                  `datetime` = " . $db->esc($commit->getDateTime()) . "
         ");
     }
 
@@ -143,9 +143,9 @@ class MySqlPersistenceStore implements PersistenceStore
         $db->execute("
             UPDATE `indra_commit`
             SET
-                `mother_commit_id` = '" . $commit->getMotherCommitId() . "'
+                `mother_commit_id` = " . $db->esc($commit->getMotherCommitId()) . "
             WHERE
-                `commit_id` = '" . $commit->getCommitId() . "'
+                `commit_id` = " . $db->esc($commit->getCommitId()) . "
         ");
     }
 
@@ -156,7 +156,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $data = $db->querySingleRow("
             SELECT * FROM`indra_commit`
               WHERE
-                  `commit_id` = '" . $commitId . "'
+                  `commit_id` = " . $db->esc($commitId) . "
         ");
 
         $commit = new Commit($commitId, $data['mother_commit_id'], $data['reason'], $data['username'], $data['datetime']);
@@ -171,10 +171,10 @@ class MySqlPersistenceStore implements PersistenceStore
         $db->execute("
             INSERT INTO `indra_branch`
                 SET
-                      `branch_id` = '" . $branch->getBranchId() . "',
-                      `commit_id` = '" . $branch->getCommitId() . "'
+                      `branch_id` = " . $db->esc($branch->getBranchId()) . ",
+                      `commit_id` = " . $db->esc($branch->getCommitId()) . "
                 ON DUPLICATE KEY UPDATE
-                      `commit_id` = '" . $branch->getCommitId() . "'
+                      `commit_id` = " . $db->esc($branch->getCommitId()) . "
         ");
     }
 
@@ -185,7 +185,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $branchData = $db->querySingleRow("
             SELECT `commit_id`
             FROM `indra_branch`
-            WHERE `branch_id` = '" . $branchId . "'
+            WHERE `branch_id` = " . $db->esc($branchId) . "
         ");
 
         if ($branchData) {
@@ -206,7 +206,7 @@ class MySqlPersistenceStore implements PersistenceStore
 
         $attributeValues = $db->querySingleRow("
             SELECT * FROM `" . $view->getTableName() . "`
-            WHERE id = '" . $db->esc($objectId) . "'
+            WHERE id = " . $db->esc($objectId) . "
         ");
 
         if (empty($attributeValues)) {
@@ -226,7 +226,7 @@ class MySqlPersistenceStore implements PersistenceStore
 
         $db->execute("
             DELETE FROM `" . $branchView->getTableName() . "`
-            WHERE id = '" . $db->esc($objectId) . "'
+            WHERE id = " . $db->esc($objectId) . "
         ");
     }
 
@@ -240,9 +240,9 @@ class MySqlPersistenceStore implements PersistenceStore
         $db->execute("
             INSERT INTO `indra_commit_type`
                 SET
-                      `commit_id` = '" . $dotCommit->getCommitId() . "',
-                      `type_id` = '" . $dotCommit->getTypeId() . "',
-                      `diff` = '" . $diff . "'
+                      `commit_id` = " . $db->esc($dotCommit->getCommitId()) . ",
+                      `type_id` = " . $db->esc($dotCommit->getTypeId()) . ",
+                      `diff` = " . $db->esc($diff) . "
         ");
     }
 
@@ -253,7 +253,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $rows = $db->queryMultipleRows("
             SELECT type_id, diff
             FROM indra_commit_type
-            WHERE commit_id = '" . $commit->getCommitId() . "'
+            WHERE commit_id = " . $db->esc($commit->getCommitId()) . "
         ");
 
         $serializer = new DiffService();
@@ -283,7 +283,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $rows = $db->queryMultipleRows("
             SELECT type_id, diff
             FROM indra_commit_type
-            WHERE commit_id = '" . $commit->getCommitId() . "' AND type_id = '" . $type->getId() . "'
+            WHERE commit_id = " . $db->esc($commit->getCommitId()) . " AND type_id = " . $db->esc($type->getId()) . "
         ");
 
         $serializer = new DiffService();
@@ -308,7 +308,7 @@ class MySqlPersistenceStore implements PersistenceStore
         return $db->querySingleCell("
             SELECT COUNT(*)
             FROM `indra_branch_view`
-            WHERE `view_id` = '". $db->esc($branchView->getViewId()) . "'
+            WHERE `view_id` = ". $db->esc($branchView->getViewId()) . "
         ");
     }
 
@@ -319,7 +319,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $viewId = $db->querySingleCell("
             SELECT view_id
             FROM indra_branch_view
-            WHERE branch_id = '" . $branchId . "' AND type_id = '" . $typeId . "'");
+            WHERE branch_id = " . $db->esc($branchId) . " AND type_id = " . $db->esc($typeId));
 
         if ($viewId) {
             $branchView = new BranchView($branchId, $typeId, $viewId);
@@ -342,7 +342,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $branchViewData = $db->queryMultipleRows("
             SELECT type_id, view_id
             FROM indra_branch_view
-            WHERE branch_id = '" . $branchId . "'");
+            WHERE branch_id = " . $db->esc($branchId));
 
         $branchViews = [];
         foreach ($branchViewData as $branchViewRow) {
@@ -361,13 +361,13 @@ class MySqlPersistenceStore implements PersistenceStore
 
             // drop table stops running transactions
             if (!Context::inTestMode()) {
-                $db->execute("DROP TABLE " . $branchView->getTableName());
+                $db->execute("DROP TABLE `" . $branchView->getTableName() . "`");
             }
         }
 
         $db->execute("
           DELETE FROM indra_branch_view
-          WHERE branch_id = '" . $branchView->getBranchId() . "' AND type_id = '" . $branchView->getTypeId() . "'");
+          WHERE branch_id = " . $db->esc($branchView->getBranchId()) . " AND type_id = " . $db->esc($branchView->getTypeId()));
 
     }
 
@@ -396,7 +396,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $viewId = $db->querySingleCell("
             SELECT view_id
             FROM indra_snapshot
-            WHERE commit_id = '" . $commitId . "' AND type_id = '" . $typeId . "'");
+            WHERE commit_id = " . $db->esc($commitId) . " AND type_id = " . $db->esc($typeId));
 
         if ($viewId) {
             $snapshot = new Snapshot($commitId, $typeId, $viewId);
@@ -413,9 +413,9 @@ class MySqlPersistenceStore implements PersistenceStore
 
         $db->execute("
             INSERT INTO indra_branch_view
-            SET branch_id = '" . $branchView->getBranchId() . "',
-                type_id = '" . $branchView->getTypeId() . "',
-                view_id = '" . $branchView->getViewId() . "'
+            SET branch_id = " . $db->esc($branchView->getBranchId()) . ",
+                type_id = " . $db->esc($branchView->getTypeId()) . ",
+                view_id = " . $db->esc($branchView->getViewId()) . "
         ");
 
         $this->createTableForView($branchView, $type);
@@ -427,9 +427,9 @@ class MySqlPersistenceStore implements PersistenceStore
 
         $db->execute("
             INSERT INTO indra_snapshot
-            SET commit_id = '" . $snapshot->getCommitId() . "',
-                type_id = '" . $snapshot->getTypeId() . "',
-                view_id = '" . $snapshot->getViewId() . "'
+            SET commit_id = " . $db->esc($snapshot->getCommitId()) . ",
+                type_id = " . $db->esc($snapshot->getTypeId()) . ",
+                view_id = " . $db->esc($snapshot->getViewId()) . "
         ");
 
         $this->cloneTableView($snapshot, $branchView);
@@ -455,7 +455,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $temporary = Context::inTestMode() ? "TEMPORARY" : "";
 
         $db->execute("
-            CREATE {$temporary} TABLE " . $tableView->getTableName() . " (
+            CREATE {$temporary} TABLE `" . $tableView->getTableName() . "` (
                 `id` binary(22) NOT NULL,
                 {$fields}
                 primary key (`id`)
@@ -474,7 +474,7 @@ class MySqlPersistenceStore implements PersistenceStore
             $db->execute("
                 UPDATE `" . $tableView->getTableName() . "`
                 SET {$values}
-                WHERE id = '" . $db->esc($diffItem->getObjectId()) . "'
+                WHERE id = " . $db->esc($diffItem->getObjectId()) . "
             ");
 
         } elseif ($diffItem instanceof ObjectAdded) {
@@ -483,7 +483,7 @@ class MySqlPersistenceStore implements PersistenceStore
 
             $db->execute("
                 INSERT INTO `" . $tableView->getTableName() . "`
-                SET id = '" . $db->esc($diffItem->getObjectId()) . "',
+                SET id = " . $db->esc($diffItem->getObjectId()) . ",
                 {$values}
             ");
 
@@ -491,7 +491,7 @@ class MySqlPersistenceStore implements PersistenceStore
 
             $db->execute("
                 DELETE FROM `" . $tableView->getTableName() . "`
-                WHERE id = '" . $db->esc($diffItem->getObjectId()) . "'
+                WHERE id = " . $db->esc($diffItem->getObjectId()) . "
             ");
 
         } else {
@@ -504,9 +504,9 @@ class MySqlPersistenceStore implements PersistenceStore
         $db = Context::getDB();
 
         $db->execute("
-            UPDATE indra_branch_view
-            SET view_id = '" . $newBranchView->getViewId() . "'
-            WHERE branch_id = '" . $oldBranchView->getBranchId() . "' AND type_id = '" . $oldBranchView->getTypeId() . "'
+            UPDATE `indra_branch_view`
+            SET view_id = " . $db->esc($newBranchView->getViewId()) . "
+            WHERE branch_id = " . $db->esc($oldBranchView->getBranchId()) . " AND type_id = " . $db->esc($oldBranchView->getTypeId()) . "
         ");
 
         $this->cloneTableView($newBranchView, $oldBranchView);
@@ -530,12 +530,12 @@ class MySqlPersistenceStore implements PersistenceStore
         $temporary = Context::inTestMode() ? "TEMPORARY" : "";
 
         $db->execute("
-            CREATE {$temporary} TABLE " . $newTableView->getTableName() . " AS
-            SELECT * FROM " . $oldTableView->getTableName() . "
+            CREATE {$temporary} TABLE `" . $newTableView->getTableName() . "` AS
+            SELECT * FROM `" . $oldTableView->getTableName() . "`
         ");
         if (!Context::inTestMode()) {
             $db->execute("
-                ALTER TABLE " . $newTableView->getTableName() . " ADD PRIMARY KEY (id)
+                ALTER TABLE `" . $newTableView->getTableName() . "` ADD PRIMARY KEY (id)
             ");
 #todo: copy all other indexes on the old table
         }
@@ -547,10 +547,10 @@ class MySqlPersistenceStore implements PersistenceStore
 
         // copy the branch views of the mother branch into the new branch
         $db->execute("
-            INSERT INTO indra_branch_view (branch_id, type_id, view_id)
-            SELECT '" . $db->esc($branch->getBranchId()) . "', `type_id`, `view_id`
-            FROM indra_branch_view
-            WHERE branch_id = '" . $db->esc($motherBranch->getBranchId()) . "'
+            INSERT INTO `indra_branch_view` (branch_id, type_id, view_id)
+            SELECT " . $db->esc($branch->getBranchId()) . ", `type_id`, `view_id`
+            FROM `indra_branch_view`
+            WHERE branch_id = " . $db->esc($motherBranch->getBranchId()) . "
         ");
     }
 
@@ -567,7 +567,7 @@ class MySqlPersistenceStore implements PersistenceStore
         foreach ($attributeValues as $attributeId => list($oldValue, $newValue)) {
 
             $values .= $values ? ", " : "";
-            $values .= "`" . $attributeId . "` = '" . $db->esc($newValue) . "'";
+            $values .= "`" . $attributeId . "` = " . $db->esc($newValue);
         }
 
         return $values;
@@ -580,7 +580,7 @@ class MySqlPersistenceStore implements PersistenceStore
     {
         $db = Context::getDB();
 
-        $rows = $db->queryMultipleRows("SELECT commit_id, type_id, view_id FROM indra_snapshot");
+        $rows = $db->queryMultipleRows("SELECT commit_id, type_id, view_id FROM `indra_snapshot`");
 
         foreach ($rows as $row) {
 
@@ -588,7 +588,7 @@ class MySqlPersistenceStore implements PersistenceStore
 
             if (!Context::inTestMode()) {
 
-                $db->execute("DROP TABLE " . $snapshot->getTableName());
+                $db->execute("DROP TABLE `" . $snapshot->getTableName() . "`");
             }
         }
     }
