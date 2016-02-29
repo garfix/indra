@@ -5,7 +5,7 @@ namespace indra\service;
 use indra\exception\CommitNotAllowedException;
 use indra\object\ModelConnection;
 use indra\object\Type;
-use indra\process\CommitStagedChanged;
+use indra\process\CommitStagedChanges;
 use indra\process\Merge;
 use indra\process\Rebase;
 use indra\process\Revert;
@@ -158,7 +158,7 @@ class Domain
             throw CommitNotAllowedException::getOldCommit();
         }
 
-        $process = new CommitStagedChanged();
+        $process = new CommitStagedChanges();
         $commit = $process->run($this->getActiveBranch(), $this->modelConnection, $commitDescription);
         return $commit;
     }

@@ -16,7 +16,7 @@ use indra\storage\DomainObjectTypeCommit;
 /**
  * @author Patrick van Bergen
  */
-class CommitStagedChanged extends VersionControlProcess
+class CommitStagedChanges extends VersionControlProcess
 {
     /**
      * @param Branch $branch
