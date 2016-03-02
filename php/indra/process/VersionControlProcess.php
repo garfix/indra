@@ -14,9 +14,10 @@ abstract class VersionControlProcess
     /**
      * @param Branch $branch
      * @param $commitDescription
+     * @param $fatherCommitId
      * @return Commit
      */
-    protected function createCommit(Branch $branch, $commitDescription)
+    protected function createCommit(Branch $branch, $commitDescription, $fatherCommitId = null)
     {
         $persistenceStore = Context::getPersistenceStore();
 
@@ -26,7 +27,7 @@ abstract class VersionControlProcess
         $userName = Context::getUserNameProvider()->getUserName();
 
         // create a new commit
-        $commit = new Commit($commitId, $motherCommitId, $commitDescription, $userName, $dateTime->format('Y-m-d H:i:s'));
+        $commit = new Commit($commitId, $motherCommitId, $commitDescription, $userName, $dateTime->format('Y-m-d H:i:s'), $fatherCommitId);
         $persistenceStore->storeCommit($commit);
 
         // update the branch
@@ -37,12 +38,11 @@ abstract class VersionControlProcess
     }
 
     /**
-     * @param Branch $base
-     * @param Branch $divergent
-     * @return Commit[]
-     * @throws \Exception
+     * @param $baseHeadCommitId
+     * @param $divergentHeadCommitId
+     * @return \indra\storage\Commit[]
      */
-    protected function findDivergingCommits(Branch $base, Branch $divergent)
+    protected function findDivergingCommits($baseHeadCommitId, $divergentHeadCommitId)
     {
         $persistenceStore = Context::getPersistenceStore();
 
@@ -51,8 +51,10 @@ abstract class VersionControlProcess
         /** @var Commit[] $divergentCommits */
         $divergentCommits = [];
 
-        $baseCommitId = $base->getCommitId();
-        $divergentCommitId = $divergent->getCommitId();
+        $fatherCommitIds = [];
+
+        $baseCommitId = $baseHeadCommitId;
+        $divergentCommitId = $divergentHeadCommitId;
 
         $commonCommitId = null;
 
@@ -62,6 +64,7 @@ abstract class VersionControlProcess
 
                 $baseCommit = $persistenceStore->getCommit($baseCommitId);
                 $baseCommits[$baseCommitId] = $baseCommit;
+                $fatherCommitIds[] = $baseCommit->getFatherCommitId();
 
                 // common commit found?
                 if (array_key_exists($baseCommitId, $divergentCommits)) {
@@ -90,9 +93,13 @@ abstract class VersionControlProcess
 
         // create the cleaned up list of divergent commits
         $resultCommits = [];
-        $commitId = $divergent->getCommitId();
+        $commitId = $divergentHeadCommitId;
 
         while ($commitId != $commonCommitId) {
+
+            if (in_array($commitId, $fatherCommitIds)) {
+                break;
+            }
 
             $commit = $divergentCommits[$commitId];
             $resultCommits[] = $commit;
@@ -120,15 +127,35 @@ abstract class VersionControlProcess
      */
     protected function performCommitOnBranchViews(Branch $branch, Commit $commit)
     {
-        $persistenceStore = Context::getPersistenceStore();
+        if ($commit->getFatherCommitId()) {
 
-        foreach ($persistenceStore->getDomainObjectTypeCommits($commit) as $dotCommit) {
+            $this->performMergeCommit($branch, $commit);
 
-            $branchView = $persistenceStore->getBranchView($branch->getBranchId(), $dotCommit->getTypeId());
+        } else {
 
-            foreach ($dotCommit->getDiffItems() as $diffItem) {
-                $persistenceStore->processDiffItem($branchView, $diffItem);
+            $persistenceStore = Context::getPersistenceStore();
+
+            foreach ($persistenceStore->getDomainObjectTypeCommits($commit) as $dotCommit) {
+
+                $branchView = $persistenceStore->getBranchView($branch->getBranchId(), $dotCommit->getTypeId());
+
+                foreach ($dotCommit->getDiffItems() as $diffItem) {
+                    $persistenceStore->processDiffItem($branchView, $diffItem);
+                }
             }
+
         }
+    }
+
+    /**
+     * @param Branch $branch
+     * @param Commit $commit
+     */
+    private function performMergeCommit(Branch $branch, Commit $commit)
+    {
+        // find the commits since source split off
+        $sourceCommits = $this->findDivergingCommits($commit->getMotherCommitId(), $commit->getFatherCommitId());
+
+        $this->performCommitsOnBranchViews($branch, $sourceCommits);
     }
 }

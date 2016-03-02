@@ -78,6 +78,7 @@ class MySqlPersistenceStore implements PersistenceStore
             CREATE TABLE IF NOT EXISTS indra_commit (
 					`commit_id`				    binary(22) not null,
 					`mother_commit_id`          binary(22),
+					`father_commit_id`          binary(22),
 					`reason`	                varchar(255),
 					`username`	                varchar(255),
 					`datetime`                  datetime,
@@ -125,7 +126,8 @@ class MySqlPersistenceStore implements PersistenceStore
             INSERT INTO `indra_commit`
               SET
                   `commit_id` = " . $db->esc($commit->getCommitId()) . ",
-                  `mother_commit_id` = " . $db->esc($commit->getMotherCommitId()) . ",
+                  `mother_commit_id` = " . ($commit->getMotherCommitId() ? $db->esc($commit->getMotherCommitId()) : 'NULL'). ",
+                  `father_commit_id` = " . ($commit->getFatherCommitId() ? $db->esc($commit->getFatherCommitId()) : 'NULL') . ",
                   `reason` = " . $db->esc($commit->getReason()) . ",
                   `username` = " . $db->esc($commit->getUserName()) . ",
                   `datetime` = " . $db->esc($commit->getDateTime()) . "
@@ -159,7 +161,7 @@ class MySqlPersistenceStore implements PersistenceStore
                   `commit_id` = " . $db->esc($commitId) . "
         ");
 
-        $commit = new Commit($commitId, $data['mother_commit_id'], $data['reason'], $data['username'], $data['datetime']);
+        $commit = new Commit($commitId, $data['mother_commit_id'], $data['reason'], $data['username'], $data['datetime'], $data['father_commit_id']);
 
         return $commit;
     }

@@ -11,16 +11,19 @@ class Commit
 
     private $motherCommitId;
 
+    private $fatherCommitId;
+
     private $reason;
 
     private $userName;
 
     private $dateTime;
 
-    public function __construct($commitId, $motherCommitId, $reason, $userName, $dateTime)
+    public function __construct($commitId, $motherCommitId, $reason, $userName, $dateTime, $fatherCommitId = null)
     {
         $this->commitId = $commitId;
         $this->motherCommitId = $motherCommitId;
+        $this->fatherCommitId = $fatherCommitId;
         $this->reason = $reason;
         $this->userName = $userName;
         $this->dateTime = $dateTime;
@@ -40,6 +43,14 @@ class Commit
     public function getMotherCommitId()
     {
         return $this->motherCommitId;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFatherCommitId()
+    {
+        return $this->fatherCommitId;
     }
 
     /**

@@ -70,25 +70,33 @@ class MergeBranchesTest extends Base
         $this->assertEquals('Dr. Who', $customer4->getName());
         $this->assertEquals('1971-09-23', $customer4->getBirthDate());
 
-        // make a change in new branch
+        // make a change in the two branches
+
+        // change in master branch
+        $domain->checkoutBranch($master);
+        $customer5 = $customerModel->loadCustomer($customerId);
+        $customer5->setName('Dr. Livingstone');
+        $customerModel->saveCustomer($customer5);
+        $domain->commit('Changed name to Dr. Livingstone');
 
         $domain->checkoutBranch($branch);
-        $customer4 = $customerModel->loadCustomer($customerId);
-        $customer4->setBirthDate('1938-02-28');
-        $customerModel->saveCustomer($customer4);
+        $customer6 = $customerModel->loadCustomer($customerId);
+        $customer6->setBirthDate('1938-02-28');
+        $customerModel->saveCustomer($customer6);
         $domain->commit('Changed customer\'s birthdate');
 
         // merge again
 
-//        $domain->checkoutBranch($master);
-//        $branch = $domain->getBranchById($branchId);
-//        $domain->mergeBranch($branch, "Merge again");
-//
-//        // only the last commit should be reapplied, not the rest of the branch
-//
-//        $customer5 = $customerModel->loadCustomer($customerId);
-//        $this->assertEquals('Dr. Who', $customer5->getName());
-//        $this->assertEquals('1938-02-28', $customer5->getBirthDate());
+        $domain->checkoutBranch($master);
+        $branch = $domain->getBranchById($branchId);
+        $domain->mergeBranch($branch, "Merge again");
 
+        // only the last commit should be reapplied, not the rest of the branch
+
+        $customer7 = $customerModel->loadCustomer($customerId);
+        $this->assertEquals('Dr. Livingstone', $customer7->getName());
+        $this->assertEquals('1938-02-28', $customer7->getBirthDate());
+
+        #todo: all performings of commits and dot commits / reverts must go through a single source code
     }
 }

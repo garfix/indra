@@ -29,7 +29,7 @@ class Rebase extends VersionControlProcess
         }
 
         // find the commits since source split off
-        $divergingCommits = $this->findDivergingCommits($source, $target);
+        $divergingCommits = $this->findDivergingCommits($source->getCommitId(), $target->getCommitId());
 
         // rebase the diverging commits to the head of the source branch
         if (!empty($divergingCommits)) {
