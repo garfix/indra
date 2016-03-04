@@ -32,7 +32,7 @@ class MergeBranchesTest extends Base
 
         // start new branch and change customer
 
-        $branch = $domain->checkoutNewBranch();
+        $branch = $domain->checkoutNewBranch("Branch 1");
         $branchId = $branch->getBranchId();
 
         $customer = $customerModel->loadCustomer($customerId);
@@ -63,6 +63,9 @@ class MergeBranchesTest extends Base
         $domain->checkoutBranch($master);
         $branch = $domain->getBranchById($branchId);
         $domain->mergeBranch($branch, "Merge");
+
+        // test that the branch's name is stored
+        $this->assertSame("Branch 1", $branch->getBranchName());
 
         // test that the merge succeeded and that only the change was applied
         $domain->checkoutBranch($master);

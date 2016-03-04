@@ -79,7 +79,7 @@ class CheckoutTest extends Base
 
         // do some changes in a new branch
 
-        $specialBranch = $domain->checkoutNewBranch();
+        $specialBranch = $domain->checkoutNewBranch("Special branch");
 
         $c1->setAddress("Springs fall 222");
         $model->saveCustomer($c1);

@@ -71,7 +71,7 @@ class RebaseTest extends  \Base
 
         // do some changes in a new branch
 
-        $specialBranch = $domain->checkoutNewBranch();
+        $specialBranch = $domain->checkoutNewBranch("Branch 1");
 
         $c1->setAddress("Springs fall 222");
         $model->saveCustomer($c1);
