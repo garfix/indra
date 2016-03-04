@@ -22,7 +22,7 @@ abstract class VersionControlProcess
         $persistenceStore = Context::getPersistenceStore();
 
         $commitId = Context::getIdGenerator()->generateId();
-        $motherCommitId = $branch->getCommitId();
+        $motherCommitId = $branch->getHeadCommitId();
         $dateTime = Context::getDateTimeGenerator()->getDateTime();
         $userName = Context::getUserNameProvider()->getUserName();
 
@@ -31,7 +31,7 @@ abstract class VersionControlProcess
         $persistenceStore->storeCommit($commit);
 
         // update the branch
-        $branch->setCommitId($commitId);
+        $branch->setHeadCommitId($commitId);
         $persistenceStore->storeBranch($branch);
 
         return $commit;

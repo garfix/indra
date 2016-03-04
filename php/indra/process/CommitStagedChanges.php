@@ -45,7 +45,7 @@ class CommitStagedChanges extends VersionControlProcess
     private function storeChanges(Branch $branch, ModelConnection $modelConnection)
     {
         $persistenceStore = Context::getPersistenceStore();
-        $commitId = $branch->getCommitId();
+        $commitId = $branch->getHeadCommitId();
 
         $objectTypeDiff = [];
         $types = [];

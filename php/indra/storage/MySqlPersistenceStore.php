@@ -70,7 +70,7 @@ class MySqlPersistenceStore implements PersistenceStore
             CREATE TABLE IF NOT EXISTS indra_branch (
 					`branch_id`				    binary(22) not null,
 					`branch_name`			    varchar(255),
-					`commit_id`                 binary(22) not null,
+					`head_commit_id`            binary(22) not null,
 					primary key (`branch_id`)
             ) engine InnoDB
         ");
@@ -176,9 +176,10 @@ class MySqlPersistenceStore implements PersistenceStore
                 SET
                       `branch_id` = " . $db->esc($branch->getBranchId()) . ",
                       `branch_name` = " . $db->esc($branch->getBranchName()) . ",
-                      `commit_id` = " . $db->esc($branch->getCommitId()) . "
+                      `head_commit_id` = " . $db->esc($branch->getHeadCommitId()) . "
                 ON DUPLICATE KEY UPDATE
-                      `commit_id` = " . $db->esc($branch->getCommitId()) . "
+                      `branch_name` = " . $db->esc($branch->getBranchName()) . ",
+                      `head_commit_id` = " . $db->esc($branch->getHeadCommitId()) . "
         ");
     }
 
@@ -187,7 +188,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $db = Context::getDB();
 
         $branchData = $db->querySingleRow("
-            SELECT `commit_id`, `branch_name`
+            SELECT `head_commit_id`, `branch_name`
             FROM `indra_branch`
             WHERE `branch_id` = " . $db->esc($branchId) . "
         ");
@@ -195,7 +196,7 @@ class MySqlPersistenceStore implements PersistenceStore
         if ($branchData) {
 
             $branch = new Branch($branchId, $branchData['branch_name']);
-            $branch->setCommitId($branchData['commit_id']);
+            $branch->setHeadCommitId($branchData['head_commit_id']);
 
             return $branch;
 

@@ -45,7 +45,7 @@ class Domain
         $motherBranch = $this->getActiveBranch();
 
         $newBranch = new Branch(Context::getIdGenerator()->generateId(), $branchName);
-        $newBranch->setCommitId($motherBranch->getCommitId());
+        $newBranch->setHeadCommitId($motherBranch->getHeadCommitId());
         Context::getPersistenceStore()->copyBranchViews($motherBranch, $newBranch);
 
         $this->checkoutBranch($newBranch);
@@ -214,7 +214,7 @@ class Domain
         $snapshot = new Snapshot($commit->getCommitId(), $type->getId(), Context::getIdGenerator()->generateId());
         $persistenceStore->storeSnapshot($snapshot, $persistenceStore->getBranchView($this->getActiveBranch()->getBranchId(), $type->getId()));
 
-        $commitId = $branch->getCommitId();
+        $commitId = $branch->getHeadCommitId();
 
         while ($commitId != null && $commitId != $commit->getCommitId()) {
 

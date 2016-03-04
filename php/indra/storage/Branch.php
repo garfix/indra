@@ -13,7 +13,7 @@ class Branch
 
     protected $branchName = null;
 
-    protected $commitId = null;
+    protected $headCommitId = null;
 
     public function __construct($branchId, $branchName)
     {
@@ -26,14 +26,14 @@ class Branch
         return $this->branchId;
     }
 
-    public function getCommitId()
+    public function getHeadCommitId()
     {
-        return $this->commitId;
+        return $this->headCommitId;
     }
 
-    public function setCommitId($commitId)
+    public function setHeadCommitId($headCommitId)
     {
-        $this->commitId = $commitId;
+        $this->headCommitId = $headCommitId;
     }
 
     public function getBranchName()

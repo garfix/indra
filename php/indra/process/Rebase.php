@@ -29,13 +29,13 @@ class Rebase extends VersionControlProcess
         }
 
         // find the commits since source split off
-        $divergingCommits = $this->findDivergingCommits($source->getCommitId(), $target->getCommitId());
+        $divergingCommits = $this->findDivergingCommits($source->getHeadCommitId(), $target->getHeadCommitId());
 
         // rebase the diverging commits to the head of the source branch
         if (!empty($divergingCommits)) {
             /** @var Commit $firstCommit */
             $firstCommit = reset($divergingCommits);
-            $firstCommit->setMotherCommitId($source->getCommitId());
+            $firstCommit->setMotherCommitId($source->getHeadCommitId());
             $persistenceStore->updateMotherCommitId($firstCommit);
         }
 

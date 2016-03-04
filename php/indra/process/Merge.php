@@ -24,7 +24,7 @@ class Merge extends VersionControlProcess
         }
 
         // create commit and update branch
-        $mergeCommit = $this->createCommit($target, $commitDescription, $source->getCommitId());
+        $mergeCommit = $this->createCommit($target, $commitDescription, $source->getHeadCommitId());
 
         // execute the merge commit on the branch view
         $this->performCommitOnBranchViews($target, $mergeCommit);
