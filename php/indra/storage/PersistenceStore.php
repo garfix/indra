@@ -63,21 +63,21 @@ interface PersistenceStore
      * @throws DataBaseException
      * @throws DiffItemClassNotRecognizedException
      */
-    public function getDomainObjectTypeCommits(Commit $commit);
+    public function loadDomainObjectTypeCommits(Commit $commit);
 
     /**
      * @param Commit $commit
      * @param Type $type
      * @return DomainObjectTypeCommit[]
      */
-    public function getDomainObjectTypeCommitsForType(Commit $commit, Type $type);
+    public function loadDomainObjectTypeCommitsForType(Commit $commit, Type $type);
 
     /**
      * @param BranchView $branchView
      * @return int
      * @throws DataBaseException
      */
-    public function getNumberOfBranchesUsingView(BranchView $branchView);
+    public function loadNumberOfBranchesUsingView(BranchView $branchView);
 
     /**
      * @param string $branchId
@@ -85,7 +85,7 @@ interface PersistenceStore
      * @return BranchView
      * @throws DataBaseException
      */
-    public function getBranchView($branchId, $typeId);
+    public function loadBranchView($branchId, $typeId);
 
     /**
      * @param Branch $branch
@@ -141,7 +141,7 @@ interface PersistenceStore
      * @param int $commitId
      * @return Commit
      */
-    public function getCommit($commitId);
+    public function loadCommit($commitId);
 
     /**
      * @return void

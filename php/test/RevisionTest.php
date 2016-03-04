@@ -51,4 +51,24 @@ class RevisionTest extends Base
         $name = $customer3->getName();
         $this->assertEquals('Dr. Who', $name);
     }
+
+    public function testGetCommitList()
+    {
+        $domain = new Domain();
+        $customerModel = new CustomerModel($domain);
+
+        $customer = $customerModel->createCustomer();
+        $customer->setName('Dr. Jones');
+        $customerModel->saveCustomer($customer);
+        $domain->commit('Add customer Dr. Jones');
+
+        $customer->setName('Dr. Who');
+        $customerModel->saveCustomer($customer);
+        $domain->commit('Dr. Jones renamed to Dr. Who');
+
+        $commits = $domain->getCommitList($domain->getMasterBranch()->getHeadCommitId());
+        $this->assertEquals(2, count($commits));
+        $headCommit = $commits[0];
+        $this->assertEquals("Dr. Jones renamed to Dr. Who", $headCommit->getReason());
+    }
 }

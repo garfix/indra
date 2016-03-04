@@ -152,7 +152,7 @@ class MySqlPersistenceStore implements PersistenceStore
         ");
     }
 
-    public function getCommit($commitId)
+    public function loadCommit($commitId)
     {
         $db = Context::getDB();
 
@@ -227,7 +227,7 @@ class MySqlPersistenceStore implements PersistenceStore
 
         $objectId = $object->getId();
 
-        $branchView = $this->getBranchView($branch->getBranchId(), $object->getType()->getId());
+        $branchView = $this->loadBranchView($branch->getBranchId(), $object->getType()->getId());
 
         $db->execute("
             DELETE FROM `" . $branchView->getTableName() . "`
@@ -251,7 +251,7 @@ class MySqlPersistenceStore implements PersistenceStore
         ");
     }
 
-    public function getDomainObjectTypeCommits(Commit $commit)
+    public function loadDomainObjectTypeCommits(Commit $commit)
     {
         $db = Context::getDB();
 
@@ -281,7 +281,7 @@ class MySqlPersistenceStore implements PersistenceStore
      * @param Type $type
      * @return DomainObjectTypeCommit[]
      */
-    public function getDomainObjectTypeCommitsForType(Commit $commit, Type $type)
+    public function loadDomainObjectTypeCommitsForType(Commit $commit, Type $type)
     {
         $db = Context::getDB();
 
@@ -306,7 +306,7 @@ class MySqlPersistenceStore implements PersistenceStore
         return $dotCommits;
     }
 
-    public function getNumberOfBranchesUsingView(BranchView $branchView)
+    public function loadNumberOfBranchesUsingView(BranchView $branchView)
     {
         $db = Context::getDB();
 
@@ -317,7 +317,7 @@ class MySqlPersistenceStore implements PersistenceStore
         ");
     }
 
-    public function getBranchView($branchId, $typeId)
+    public function loadBranchView($branchId, $typeId)
     {
         $db = Context::getDB();
 
@@ -362,7 +362,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $db = Context::getDB();
 
         // if this is last branch view using the table, drop it
-        if ($this->getNumberOfBranchesUsingView($branchView) == 1) {
+        if ($this->loadNumberOfBranchesUsingView($branchView) == 1) {
 
             // drop table stops running transactions
             if (!Context::inTestMode()) {

@@ -122,7 +122,7 @@ class Domain
      */
     public function getCommitById($commitId)
     {
-        return Context::getPersistenceStore()->getCommit($commitId);
+        return Context::getPersistenceStore()->loadCommit($commitId);
     }
 
     /**
@@ -144,7 +144,7 @@ class Domain
         if ($this->activeCommit) {
             return $this->getSnapshot($this->activeBranch, $this->activeCommit, $type);
         } else {
-            return Context::getPersistenceStore()->getBranchView($this->getActiveBranch()->getBranchId(), $type->getId());
+            return Context::getPersistenceStore()->loadBranchView($this->getActiveBranch()->getBranchId(), $type->getId());
         }
     }
 
@@ -162,6 +162,34 @@ class Domain
         $process = new CommitStagedChanges();
         $commit = $process->run($this->getActiveBranch(), $this->modelConnection, $commitDescription);
         return $commit;
+    }
+
+    /**
+     * Returns a list of commits
+     *
+     * @param $commitId
+     * @param int $count
+     * @return \indra\storage\Commit[]
+     */
+    public function getCommitList($commitId, $count = 25)
+    {
+        $persistenceStore = Context::getPersistenceStore();
+
+        $commits = [];
+
+        while ($commitId) {
+
+            $commit = $persistenceStore->loadCommit($commitId);
+            $commits[] = $commit;
+
+            if (count($commits) == $count) {
+                break;
+            }
+
+            $commitId = $commit->getMotherCommitId();
+        }
+
+        return $commits;
     }
 
     /**
@@ -212,15 +240,15 @@ class Domain
         $persistenceStore = Context::getPersistenceStore();
 
         $snapshot = new Snapshot($commit->getCommitId(), $type->getId(), Context::getIdGenerator()->generateId());
-        $persistenceStore->storeSnapshot($snapshot, $persistenceStore->getBranchView($this->getActiveBranch()->getBranchId(), $type->getId()));
+        $persistenceStore->storeSnapshot($snapshot, $persistenceStore->loadBranchView($this->getActiveBranch()->getBranchId(), $type->getId()));
 
         $commitId = $branch->getHeadCommitId();
 
         while ($commitId != null && $commitId != $commit->getCommitId()) {
 
-            $inBetweenCommit = Context::getPersistenceStore()->getCommit($commitId);
+            $inBetweenCommit = Context::getPersistenceStore()->loadCommit($commitId);
 
-            foreach (Context::getPersistenceStore()->getDomainObjectTypeCommitsForType($inBetweenCommit, $type) as $domainObjectTypeCommit) {
+            foreach (Context::getPersistenceStore()->loadDomainObjectTypeCommitsForType($inBetweenCommit, $type) as $domainObjectTypeCommit) {
 
                 $reversedDiffItems = [];
 

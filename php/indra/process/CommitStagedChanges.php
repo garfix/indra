@@ -104,7 +104,7 @@ class CommitStagedChanges extends VersionControlProcess
     {
         $persistenceStore = Context::getPersistenceStore();
 
-        $branchView = $persistenceStore->getBranchView($branch->getBranchId(), $type->getId());
+        $branchView = $persistenceStore->loadBranchView($branch->getBranchId(), $type->getId());
 
         // if this branch has no view, or if it is used by other branches as well, create a new view
         if (!$branchView) {
@@ -112,7 +112,7 @@ class CommitStagedChanges extends VersionControlProcess
             $branchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
             $persistenceStore->storeBranchView($branchView, $type);
 
-        } elseif ($persistenceStore->getNumberOfBranchesUsingView($branchView) > 1) {
+        } elseif ($persistenceStore->loadNumberOfBranchesUsingView($branchView) > 1) {
 
             $newBranchView = new BranchView($branch->getBranchId(), $type->getId(), Context::getIdGenerator()->generateId());
             $persistenceStore->cloneBranchView($newBranchView, $branchView);

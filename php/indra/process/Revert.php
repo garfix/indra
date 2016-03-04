@@ -26,7 +26,7 @@ class Revert extends VersionControlProcess
 
         $undoCommit = $this->createCommit($branch, sprintf("Undo commit %s (%s)", $commit->getCommitId(), $commit->getReason()));
 
-        foreach ($persistenceStore->getDomainObjectTypeCommits($commit) as $domainObjectTypeCommit) {
+        foreach ($persistenceStore->loadDomainObjectTypeCommits($commit) as $domainObjectTypeCommit) {
 
             $typeId = $domainObjectTypeCommit->getTypeId();
 
@@ -40,7 +40,7 @@ class Revert extends VersionControlProcess
 
             $persistenceStore->storeDomainObjectTypeCommit($dotCommit);
 
-            $branchView = $persistenceStore->getBranchView($branch->getBranchId(), $domainObjectTypeCommit->getTypeId());
+            $branchView = $persistenceStore->loadBranchView($branch->getBranchId(), $domainObjectTypeCommit->getTypeId());
 
             foreach ($reversedDiffItems as $diffItem) {
                 $persistenceStore->processDiffItem($branchView, $diffItem);

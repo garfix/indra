@@ -62,7 +62,7 @@ abstract class VersionControlProcess
 
             if ($baseCommitId != null) {
 
-                $baseCommit = $persistenceStore->getCommit($baseCommitId);
+                $baseCommit = $persistenceStore->loadCommit($baseCommitId);
                 $baseCommits[$baseCommitId] = $baseCommit;
                 $fatherCommitIds[] = $baseCommit->getFatherCommitId();
 
@@ -77,7 +77,7 @@ abstract class VersionControlProcess
 
             if ($divergentCommitId != null) {
 
-                $divergentCommit = $persistenceStore->getCommit($divergentCommitId);
+                $divergentCommit = $persistenceStore->loadCommit($divergentCommitId);
                 $divergentCommits[$divergentCommitId] = $divergentCommit;
 
                 // common commit found?
@@ -135,9 +135,9 @@ abstract class VersionControlProcess
 
             $persistenceStore = Context::getPersistenceStore();
 
-            foreach ($persistenceStore->getDomainObjectTypeCommits($commit) as $dotCommit) {
+            foreach ($persistenceStore->loadDomainObjectTypeCommits($commit) as $dotCommit) {
 
-                $branchView = $persistenceStore->getBranchView($branch->getBranchId(), $dotCommit->getTypeId());
+                $branchView = $persistenceStore->loadBranchView($branch->getBranchId(), $dotCommit->getTypeId());
 
                 foreach ($dotCommit->getDiffItems() as $diffItem) {
                     $persistenceStore->processDiffItem($branchView, $diffItem);
