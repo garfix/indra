@@ -11,11 +11,14 @@ class Branch
 
     protected $branchId = null;
 
+    protected $branchName = null;
+
     protected $commitId = null;
 
-    public function __construct($branchId)
+    public function __construct($branchId, $branchName)
     {
         $this->branchId = $branchId;
+        $this->branchName = $branchName;
     }
 
     public function getBranchId()
@@ -31,6 +34,11 @@ class Branch
     public function setCommitId($commitId)
     {
         $this->commitId = $commitId;
+    }
+
+    public function getBranchName()
+    {
+        return $this->branchName;
     }
 
     public function isMaster()

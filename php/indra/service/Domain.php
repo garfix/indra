@@ -37,13 +37,14 @@ class Domain
     /**
      * Create a new branch and make this the active branch. New commits will be done in this branch.
      *
+     * @param $branchName
      * @return Branch
      */
-    public function checkoutNewBranch()
+    public function checkoutNewBranch($branchName)
     {
         $motherBranch = $this->getActiveBranch();
 
-        $newBranch = new Branch(Context::getIdGenerator()->generateId());
+        $newBranch = new Branch(Context::getIdGenerator()->generateId(), $branchName);
         $newBranch->setCommitId($motherBranch->getCommitId());
         Context::getPersistenceStore()->copyBranchViews($motherBranch, $newBranch);
 
@@ -101,7 +102,7 @@ class Domain
         $branch = $persistenceStore->loadBranch(Branch::MASTER);
 
         if (!$branch) {
-            $branch = new Branch(Branch::MASTER, null, null);
+            $branch = new Branch(Branch::MASTER, "Master");
         }
 
         return $branch;

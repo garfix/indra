@@ -69,6 +69,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $db->execute("
             CREATE TABLE IF NOT EXISTS indra_branch (
 					`branch_id`				    binary(22) not null,
+					`branch_name`			    varchar(255),
 					`commit_id`                 binary(22) not null,
 					primary key (`branch_id`)
             ) engine InnoDB
@@ -174,6 +175,7 @@ class MySqlPersistenceStore implements PersistenceStore
             INSERT INTO `indra_branch`
                 SET
                       `branch_id` = " . $db->esc($branch->getBranchId()) . ",
+                      `branch_name` = " . $db->esc($branch->getBranchName()) . ",
                       `commit_id` = " . $db->esc($branch->getCommitId()) . "
                 ON DUPLICATE KEY UPDATE
                       `commit_id` = " . $db->esc($branch->getCommitId()) . "
@@ -185,14 +187,14 @@ class MySqlPersistenceStore implements PersistenceStore
         $db = Context::getDB();
 
         $branchData = $db->querySingleRow("
-            SELECT `commit_id`
+            SELECT `commit_id`, `branch_name`
             FROM `indra_branch`
             WHERE `branch_id` = " . $db->esc($branchId) . "
         ");
 
         if ($branchData) {
 
-            $branch = new Branch($branchId);
+            $branch = new Branch($branchId, $branchData['branch_name']);
             $branch->setCommitId($branchData['commit_id']);
 
             return $branch;
