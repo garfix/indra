@@ -3,16 +3,15 @@
 namespace indra\service;
 
 use indra\exception\CommitNotAllowedException;
-use indra\exception\DiffItemClassNotRecognizedException;
 use indra\object\ModelConnection;
 use indra\object\Type;
 use indra\process\CommitStagedChanges;
+use indra\process\CreateSnapshot;
 use indra\process\Merge;
 use indra\process\Rebase;
 use indra\process\Revert;
 use indra\storage\Branch;
 use indra\storage\Commit;
-use indra\storage\DiffService;
 use indra\storage\Snapshot;
 use indra\storage\TableView;
 
@@ -261,7 +260,8 @@ class Domain
     {
         $snapshot = Context::getPersistenceStore()->loadSnapshot($commit, $type->getId());
         if (!$snapshot) {
-            $snapshot =  $this->createSnapshot($branch, $commit, $type);
+            $createSnapShot = new CreateSnapshot();
+            $snapshot =  $createSnapShot->run($branch, $commit, $type);
         }
         return $snapshot;
     }
@@ -272,46 +272,6 @@ class Domain
     public function removeAllSnapshots()
     {
         Context::getPersistenceStore()->removeAllSnapshots();
-    }
-
-    /**
-     * @param Branch $branch
-     * @param Commit $commit
-     * @param Type $type
-     * @return Snapshot
-     * @throws DiffItemClassNotRecognizedException
-     */
-    private function createSnapshot(Branch $branch, Commit $commit, Type $type)
-    {
-        $diffService = new DiffService();
-        $persistenceStore = Context::getPersistenceStore();
-
-        $snapshot = new Snapshot($commit->getCommitId(), $type->getId(), Context::getIdGenerator()->generateId());
-        $persistenceStore->storeSnapshot($snapshot, $persistenceStore->loadBranchView($this->getActiveBranch()->getBranchId(), $type->getId()));
-
-        $commitId = $branch->getHeadCommitId();
-
-        while ($commitId != null && $commitId != $commit->getCommitId()) {
-
-            $inBetweenCommit = Context::getPersistenceStore()->loadCommit($commitId);
-
-            foreach (Context::getPersistenceStore()->loadDomainObjectTypeCommitsForType($inBetweenCommit, $type) as $domainObjectTypeCommit) {
-
-                $reversedDiffItems = [];
-
-                foreach (array_reverse($domainObjectTypeCommit->getDiffItems()) as $diffItem) {
-                    $reversedDiffItems[] = $diffService->getReverseDiffItem($diffItem);
-                }
-
-                foreach ($reversedDiffItems as $diffItem) {
-                    $persistenceStore->processDiffItem($snapshot, $diffItem);
-                }
-            }
-
-            $commitId = $inBetweenCommit->getMotherCommitId();
-        }
-
-        return $snapshot;
     }
 
     /**

@@ -61,12 +61,9 @@ class DomainObject
         return $this->originalAttributes;
     }
 
-    public function setAttributeValues($attributeValues)
-    {
-#todo check!!!
-        $this->attributes = $attributeValues;
-    }
-
+    /**
+     * @return bool
+     */
     public function isNew()
     {
         return empty($this->originalAttributes);
