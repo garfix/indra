@@ -152,17 +152,51 @@ class MySqlPersistenceStore implements PersistenceStore
         ");
     }
 
+    public function getCommitChildCount(Commit $commit)
+    {
+        $db = Context::getDB();
+
+        $commitId = $commit->getCommitId();
+
+        return $db->querySingleCell("
+            SELECT COUNT(*)
+            FROM `indra_commit`
+            WHERE
+                `mother_commit_id` = " . $db->esc($commitId) . " OR `father_commit_id` = " . $db->esc($commitId) . "
+        ");
+    }
+
+    public function removeCommit(Commit $commit)
+    {
+        $db = Context::getDB();
+
+        $db->execute("
+            DELETE FROM `indra_commit`
+            WHERE
+                `commit_id` = " . $db->esc($commit->getCommitId()) . "
+        ");
+        $db->execute("
+            DELETE FROM `indra_commit_type`
+            WHERE
+                `commit_id` = " . $db->esc($commit->getCommitId()) . "
+        ");
+    }
+
     public function loadCommit($commitId)
     {
         $db = Context::getDB();
 
         $data = $db->querySingleRow("
-            SELECT * FROM`indra_commit`
+            SELECT * FROM `indra_commit`
               WHERE
                   `commit_id` = " . $db->esc($commitId) . "
         ");
 
-        $commit = new Commit($commitId, $data['mother_commit_id'], $data['reason'], $data['username'], $data['datetime'], $data['father_commit_id']);
+        if ($data) {
+            $commit = new Commit($commitId, $data['mother_commit_id'], $data['reason'], $data['username'], $data['datetime'], $data['father_commit_id']);
+        } else {
+            $commit = null;
+        }
 
         return $commit;
     }
@@ -180,6 +214,16 @@ class MySqlPersistenceStore implements PersistenceStore
                 ON DUPLICATE KEY UPDATE
                       `branch_name` = " . $db->esc($branch->getBranchName()) . ",
                       `head_commit_id` = " . $db->esc($branch->getHeadCommitId()) . "
+        ");
+    }
+
+    public function removeBranch(Branch $branch)
+    {
+        $db = Context::getDB();
+
+        $db->execute("
+            DELETE FROM `indra_branch`
+              WHERE `branch_id` = " . $db->esc($branch->getBranchId()) . "
         ");
     }
 
@@ -221,7 +265,7 @@ class MySqlPersistenceStore implements PersistenceStore
         return $attributeValues;
     }
 
-    public function remove(DomainObject $object, Branch $branch)
+    public function removeDomainObject(DomainObject $object, Branch $branch)
     {
         $db = Context::getDB();
 
@@ -306,7 +350,7 @@ class MySqlPersistenceStore implements PersistenceStore
         return $dotCommits;
     }
 
-    public function loadNumberOfBranchesUsingView(BranchView $branchView)
+    public function getNumberOfBranchesUsingView(BranchView $branchView)
     {
         $db = Context::getDB();
 
@@ -362,7 +406,7 @@ class MySqlPersistenceStore implements PersistenceStore
         $db = Context::getDB();
 
         // if this is last branch view using the table, drop it
-        if ($this->loadNumberOfBranchesUsingView($branchView) == 1) {
+        if ($this->getNumberOfBranchesUsingView($branchView) == 1) {
 
             // drop table stops running transactions
             if (!Context::inTestMode()) {

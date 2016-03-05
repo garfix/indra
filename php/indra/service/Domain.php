@@ -3,6 +3,7 @@
 namespace indra\service;
 
 use indra\exception\CommitNotAllowedException;
+use indra\exception\DiffItemClassNotRecognizedException;
 use indra\object\ModelConnection;
 use indra\object\Type;
 use indra\process\CommitStagedChanges;
@@ -75,6 +76,11 @@ class Domain
         $this->activeCommit = $commit;
     }
 
+    /**
+     * Causes the diverging commits of the active branch to be re-based on $source.
+     *
+     * @param Branch $source
+     */
     public function rebaseBranch(Branch $source)
     {
         $rebase = new Rebase();
@@ -93,6 +99,31 @@ class Domain
     }
 
     /**
+     * Removes $branch's branch views and all commits that are not part of another branch.
+     *
+     * @param Branch $branch
+     */
+    public function removeBranch(Branch $branch)
+    {
+        $persistenceStore = Context::getPersistenceStore();
+
+        $persistenceStore->removeBranchViews($branch);
+        $persistenceStore->removeBranch($branch);
+
+        $commitId = $branch->getHeadCommitId();
+
+        while ($commitId) {
+            $commit = $persistenceStore->loadCommit($commitId);
+            if ($persistenceStore->getCommitChildCount($commit) > 0) {
+                break;
+            } else {
+                $persistenceStore->removeCommit($commit);
+            }
+            $commitId = $commit->getMotherCommitId();
+        }
+    }
+
+    /**
      * @return Branch
      */
     public function getMasterBranch()
@@ -106,14 +137,6 @@ class Domain
         }
 
         return $branch;
-    }
-
-    /**
-     * @return Branch
-     */
-    private function getActiveBranch()
-    {
-        return $this->activeBranch ?: $this->activeBranch = $this->getMasterBranch();
     }
 
     /**
@@ -193,14 +216,6 @@ class Domain
     }
 
     /**
-     * @return bool
-     */
-    private function allowCommit()
-    {
-        return !$this->activeCommit;
-    }
-
-    /**
      * @param Branch $source
      * @param string $commitDescription
      * @return Commit
@@ -225,6 +240,23 @@ class Domain
         return $undoCommit;
     }
 
+    /**
+     * Returns the branch that future actions will be performed upon.
+     * If no branch was made active yet, Master will be used.
+     *
+     * @return Branch
+     */
+    private function getActiveBranch()
+    {
+        return $this->activeBranch ?: $this->activeBranch = $this->getMasterBranch();
+    }
+
+    /**
+     * @param Branch $branch
+     * @param Commit $commit
+     * @param Type $type
+     * @return Snapshot
+     */
     private function getSnapshot(Branch $branch, Commit $commit, Type $type)
     {
         $snapshot = Context::getPersistenceStore()->loadSnapshot($commit, $type->getId());
@@ -234,6 +266,21 @@ class Domain
         return $snapshot;
     }
 
+    /**
+     * Removes all snapshot records and tables.
+     */
+    public function removeAllSnapshots()
+    {
+        Context::getPersistenceStore()->removeAllSnapshots();
+    }
+
+    /**
+     * @param Branch $branch
+     * @param Commit $commit
+     * @param Type $type
+     * @return Snapshot
+     * @throws DiffItemClassNotRecognizedException
+     */
     private function createSnapshot(Branch $branch, Commit $commit, Type $type)
     {
         $diffService = new DiffService();
@@ -267,8 +314,11 @@ class Domain
         return $snapshot;
     }
 
-    public function removeAllSnapshots()
+    /**
+     * @return bool
+     */
+    private function allowCommit()
     {
-        Context::getPersistenceStore()->removeAllSnapshots();
+        return !$this->activeCommit;
     }
 }

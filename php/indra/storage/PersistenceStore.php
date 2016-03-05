@@ -30,7 +30,7 @@ interface PersistenceStore
      * @param DomainObject $object
      * @param Branch $branch
      */
-    public function remove(DomainObject $object, Branch $branch);
+    public function removeDomainObject(DomainObject $object, Branch $branch);
 
     /**
      * @param Commit $commit
@@ -45,10 +45,32 @@ interface PersistenceStore
     public function updateMotherCommitId(Commit $commit);
 
     /**
+     * Returns the number of commits that have $commit as its mother or father.
+     *
+     * @param Commit $commit
+     * @return int
+     * @throws DataBaseException
+     */
+    public function getCommitChildCount(Commit $commit);
+
+    /**
+     * Removes a commit.
+     *
+     * @param Commit $commit
+     * @throws DataBaseException
+     */
+    public function removeCommit(Commit $commit);
+
+    /**
      * @param Branch $branch
      * @return void
      */
     public function storeBranch(Branch $branch);
+
+    /**
+     * @param Branch $branch
+     */
+    public function removeBranch(Branch $branch);
 
     /**
      * @param DomainObjectTypeCommit $dotCommit
@@ -77,7 +99,7 @@ interface PersistenceStore
      * @return int
      * @throws DataBaseException
      */
-    public function loadNumberOfBranchesUsingView(BranchView $branchView);
+    public function getNumberOfBranchesUsingView(BranchView $branchView);
 
     /**
      * @param string $branchId
@@ -134,17 +156,20 @@ interface PersistenceStore
     /**
      * @param Branch $branch
      * @param Branch $motherBranch
+     * @throws DataBaseException
      */
     public function copyBranchViews(Branch $motherBranch, Branch $branch);
 
     /**
      * @param int $commitId
-     * @return Commit
+     * @return Commit|null
+     * @throws DataBaseException
      */
     public function loadCommit($commitId);
 
     /**
      * @return void
+     * @throws DataBaseException
      */
     public function removeAllSnapshots();
 }
