@@ -2,9 +2,12 @@
 
 namespace indra\process;
 
+use indra\object\Type;
 use indra\service\Context;
 use indra\storage\Branch;
 use indra\storage\Commit;
+use indra\storage\DiffService;
+use indra\storage\TableView;
 
 /**
  * @author Patrick van Bergen
@@ -123,13 +126,46 @@ abstract class VersionControlProcess
 
     /**
      * @param Branch $branch
+     * @param Commit[] $commits
+     */
+    protected function revertCommitsOnBranchViews(Branch $branch, array $commits)
+    {
+        foreach (array_reverse($commits) as $commit) {
+            $this->revertCommitOnBranchViews($branch, $commit);
+        }
+    }
+
+    /**
+     * @param Commit $commit
+     */
+    protected function performReversedCommitOnTableView(TableView $tableView, Commit $commit, Type $type)
+    {
+        $persistenceStore = Context::getPersistenceStore();
+
+        $diffService = new DiffService();
+        foreach (Context::getPersistenceStore()->loadDomainObjectTypeCommitsForType($commit, $type) as $domainObjectTypeCommit) {
+
+            $reversedDiffItems = [];
+
+            foreach (array_reverse($domainObjectTypeCommit->getDiffItems()) as $diffItem) {
+                $reversedDiffItems[] = $diffService->getReverseDiffItem($diffItem);
+            }
+
+            foreach ($reversedDiffItems as $diffItem) {
+                $persistenceStore->processDiffItem($tableView, $diffItem);
+            }
+        }
+    }
+
+    /**
+     * @param Branch $branch
      * @param Commit $commit
      */
     protected function performCommitOnBranchViews(Branch $branch, Commit $commit)
     {
         if ($commit->getFatherCommitId()) {
 
-            $this->performMergeCommit($branch, $commit);
+            $this->performMergeCommitOnBranchViews($branch, $commit);
 
         } else {
 
@@ -151,11 +187,46 @@ abstract class VersionControlProcess
      * @param Branch $branch
      * @param Commit $commit
      */
-    private function performMergeCommit(Branch $branch, Commit $commit)
+    protected function revertCommitOnBranchViews(Branch $branch, Commit $commit)
+    {
+        if ($commit->getFatherCommitId()) {
+
+            $this->revertMergeCommitOnBranchViews($branch, $commit);
+
+        } else {
+
+            $persistenceStore = Context::getPersistenceStore();
+            $diffService = new DiffService();
+
+            foreach ($persistenceStore->loadDomainObjectTypeCommits($commit) as $dotCommit) {
+
+                $branchView = $persistenceStore->loadBranchView($branch->getBranchId(), $dotCommit->getTypeId());
+
+                foreach ($dotCommit->getDiffItems() as $diffItem) {
+                    $persistenceStore->processDiffItem($branchView, $diffService->getReverseDiffItem($diffItem));
+                }
+            }
+
+        }
+    }
+
+    /**
+     * @param Branch $branch
+     * @param Commit $commit
+     */
+    private function performMergeCommitOnBranchViews(Branch $branch, Commit $commit)
     {
         // find the commits since source split off
         $sourceCommits = $this->findDivergingCommits($commit->getMotherCommitId(), $commit->getFatherCommitId());
 
         $this->performCommitsOnBranchViews($branch, $sourceCommits);
+    }
+
+    protected function revertMergeCommitOnBranchViews(Branch $branch, Commit $commit)
+    {
+        // find the commits since source split off
+        $sourceCommits = $this->findDivergingCommits($commit->getMotherCommitId(), $commit->getFatherCommitId());
+
+        $this->revertCommitsOnBranchViews($branch, $sourceCommits);
     }
 }

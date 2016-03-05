@@ -14,6 +14,9 @@ use indra\storage\DomainObjectTypeCommit;
 class Revert extends VersionControlProcess
 {
     /**
+     * Creates a new commit on $branch that undoes / reverts the actions of $commit.
+     * Also updates the branch views.
+     *
      * @param Branch $branch
      * @param Commit $commit
      * @return Commit
@@ -26,25 +29,27 @@ class Revert extends VersionControlProcess
 
         $undoCommit = $this->createCommit($branch, sprintf("Undo commit %s (%s)", $commit->getCommitId(), $commit->getReason()));
 
-        foreach ($persistenceStore->loadDomainObjectTypeCommits($commit) as $domainObjectTypeCommit) {
+        if ($commit->getFatherCommitId()) {
 
-            $typeId = $domainObjectTypeCommit->getTypeId();
+            $this->revertMergeCommitOnBranchViews($branch, $commit);
 
-            $reversedDiffItems = [];
+        } else {
 
-            foreach (array_reverse($domainObjectTypeCommit->getDiffItems()) as $diffItem) {
-                $reversedDiffItems[] = $diffService->getReverseDiffItem($diffItem);
+            foreach ($persistenceStore->loadDomainObjectTypeCommits($commit) as $domainObjectTypeCommit) {
+
+                $typeId = $domainObjectTypeCommit->getTypeId();
+
+                $reversedDiffItems = [];
+                foreach (array_reverse($domainObjectTypeCommit->getDiffItems()) as $diffItem) {
+                    $reversedDiffItems[] = $diffService->getReverseDiffItem($diffItem);
+                }
+
+                $dotCommit = new DomainObjectTypeCommit($undoCommit->getCommitId(), $typeId, $reversedDiffItems);
+                $persistenceStore->storeDomainObjectTypeCommit($dotCommit);
             }
 
-            $dotCommit = new DomainObjectTypeCommit($undoCommit->getCommitId(), $typeId, $reversedDiffItems);
+            $this->revertCommitOnBranchViews($branch, $commit);
 
-            $persistenceStore->storeDomainObjectTypeCommit($dotCommit);
-
-            $branchView = $persistenceStore->loadBranchView($branch->getBranchId(), $domainObjectTypeCommit->getTypeId());
-
-            foreach ($reversedDiffItems as $diffItem) {
-                $persistenceStore->processDiffItem($branchView, $diffItem);
-            }
         }
 
         return $undoCommit;

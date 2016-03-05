@@ -120,4 +120,47 @@ class RevisionTest extends Base
         $this->assertNull(Context::getPersistenceStore()->loadBranchView($branch1->getBranchId(), $customer->getType()->getId()));
         $this->assertNull(Context::getPersistenceStore()->loadBranchView($branch2->getBranchId(), $customer->getType()->getId()));
     }
+
+    public function testUndoMerge()
+    {
+        $domain = new Domain();
+        $customerModel = new CustomerModel($domain);
+
+        $customer = $customerModel->createCustomer();
+        $customer->setName('Dr. Atkinson');
+        $customerModel->saveCustomer($customer);
+        $domain->commit('Add customer Dr. Atkinson');
+
+        // branch 1 from master
+
+        $branch1 = $domain->checkoutNewBranch("Branch 1");
+
+        $customer->setName('Drs. P');
+        $customerModel->saveCustomer($customer);
+        $domain->commit('Dr. Jones renamed to Drs. P');
+
+        $customer->setName('Mrs. Jones');
+        $customerModel->saveCustomer($customer);
+        $domain->commit('Drs. P renamed to Mrs. Jones');
+
+        // merge
+
+        $domain->checkoutBranch($domain->getMasterBranch());
+        $mergeCommit = $domain->mergeBranch($branch1, "Merge Branch 1 into Master");
+
+        // pre-check
+
+        $domain->checkoutBranch($domain->getMasterBranch());
+        $customer1 = $customerModel->loadCustomer($customer->getId());
+        $this->assertSame("Mrs. Jones", $customer1->getName());
+
+        // revert merge
+
+        $domain->revertCommit($mergeCommit);
+
+        // after-check
+
+        $customer2 = $customerModel->loadCustomer($customer->getId());
+        $this->assertSame("Dr. Atkinson", $customer2->getName());
+    }
 }
