@@ -2,7 +2,6 @@
 
 namespace indra\diff;
 
-
 /**
  * @author Patrick van Bergen
  */

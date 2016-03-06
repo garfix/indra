@@ -126,17 +126,26 @@ abstract class VersionControlProcess
 
     /**
      * @param Branch $branch
-     * @param Commit[] $commits
+     * @param Commit $commit
      */
-    protected function revertCommitsOnBranchViews(Branch $branch, array $commits)
+    protected function performCommitOnBranchViews(Branch $branch, Commit $commit)
     {
-        foreach (array_reverse($commits) as $commit) {
-            $this->revertCommitOnBranchViews($branch, $commit);
+        $persistenceStore = Context::getPersistenceStore();
+
+        foreach ($persistenceStore->loadDomainObjectTypeCommits($commit) as $dotCommit) {
+
+            $branchView = $persistenceStore->loadBranchView($branch->getBranchId(), $dotCommit->getTypeId());
+
+            foreach ($dotCommit->getDiffItems() as $diffItem) {
+                $persistenceStore->processDiffItem($branchView, $diffItem);
+            }
         }
     }
 
     /**
+     * @param TableView $tableView
      * @param Commit $commit
+     * @param Type $type
      */
     protected function performReversedCommitOnTableView(TableView $tableView, Commit $commit, Type $type)
     {
@@ -145,14 +154,9 @@ abstract class VersionControlProcess
         $diffService = new DiffService();
         foreach (Context::getPersistenceStore()->loadDomainObjectTypeCommitsForType($commit, $type) as $domainObjectTypeCommit) {
 
-            $reversedDiffItems = [];
-
             foreach (array_reverse($domainObjectTypeCommit->getDiffItems()) as $diffItem) {
-                $reversedDiffItems[] = $diffService->getReverseDiffItem($diffItem);
-            }
-
-            foreach ($reversedDiffItems as $diffItem) {
-                $persistenceStore->processDiffItem($tableView, $diffItem);
+                $reversedDiffItem = $diffService->getReverseDiffItem($diffItem);
+                $persistenceStore->processDiffItem($tableView, $reversedDiffItem);
             }
         }
     }
@@ -161,72 +165,18 @@ abstract class VersionControlProcess
      * @param Branch $branch
      * @param Commit $commit
      */
-    protected function performCommitOnBranchViews(Branch $branch, Commit $commit)
+    protected function performReversedCommitOnBranchViews(Branch $branch, Commit $commit)
     {
-        if ($commit->getFatherCommitId()) {
+        $persistenceStore = Context::getPersistenceStore();
+        $diffService = new DiffService();
 
-            $this->performMergeCommitOnBranchViews($branch, $commit);
+        foreach ($persistenceStore->loadDomainObjectTypeCommits($commit) as $dotCommit) {
 
-        } else {
+            $branchView = $persistenceStore->loadBranchView($branch->getBranchId(), $dotCommit->getTypeId());
 
-            $persistenceStore = Context::getPersistenceStore();
-
-            foreach ($persistenceStore->loadDomainObjectTypeCommits($commit) as $dotCommit) {
-
-                $branchView = $persistenceStore->loadBranchView($branch->getBranchId(), $dotCommit->getTypeId());
-
-                foreach ($dotCommit->getDiffItems() as $diffItem) {
-                    $persistenceStore->processDiffItem($branchView, $diffItem);
-                }
+            foreach ($dotCommit->getDiffItems() as $diffItem) {
+                $persistenceStore->processDiffItem($branchView, $diffService->getReverseDiffItem($diffItem));
             }
-
         }
-    }
-
-    /**
-     * @param Branch $branch
-     * @param Commit $commit
-     */
-    protected function revertCommitOnBranchViews(Branch $branch, Commit $commit)
-    {
-        if ($commit->getFatherCommitId()) {
-
-            $this->revertMergeCommitOnBranchViews($branch, $commit);
-
-        } else {
-
-            $persistenceStore = Context::getPersistenceStore();
-            $diffService = new DiffService();
-
-            foreach ($persistenceStore->loadDomainObjectTypeCommits($commit) as $dotCommit) {
-
-                $branchView = $persistenceStore->loadBranchView($branch->getBranchId(), $dotCommit->getTypeId());
-
-                foreach ($dotCommit->getDiffItems() as $diffItem) {
-                    $persistenceStore->processDiffItem($branchView, $diffService->getReverseDiffItem($diffItem));
-                }
-            }
-
-        }
-    }
-
-    /**
-     * @param Branch $branch
-     * @param Commit $commit
-     */
-    private function performMergeCommitOnBranchViews(Branch $branch, Commit $commit)
-    {
-        // find the commits since source split off
-        $sourceCommits = $this->findDivergingCommits($commit->getMotherCommitId(), $commit->getFatherCommitId());
-
-        $this->performCommitsOnBranchViews($branch, $sourceCommits);
-    }
-
-    protected function revertMergeCommitOnBranchViews(Branch $branch, Commit $commit)
-    {
-        // find the commits since source split off
-        $sourceCommits = $this->findDivergingCommits($commit->getMotherCommitId(), $commit->getFatherCommitId());
-
-        $this->revertCommitsOnBranchViews($branch, $sourceCommits);
     }
 }

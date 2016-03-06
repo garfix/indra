@@ -29,28 +29,20 @@ class Revert extends VersionControlProcess
 
         $undoCommit = $this->createCommit($branch, sprintf("Undo commit %s (%s)", $commit->getCommitId(), $commit->getReason()));
 
-        if ($commit->getFatherCommitId()) {
+        foreach ($persistenceStore->loadDomainObjectTypeCommits($commit) as $domainObjectTypeCommit) {
 
-            $this->revertMergeCommitOnBranchViews($branch, $commit);
+            $typeId = $domainObjectTypeCommit->getTypeId();
 
-        } else {
-
-            foreach ($persistenceStore->loadDomainObjectTypeCommits($commit) as $domainObjectTypeCommit) {
-
-                $typeId = $domainObjectTypeCommit->getTypeId();
-
-                $reversedDiffItems = [];
-                foreach (array_reverse($domainObjectTypeCommit->getDiffItems()) as $diffItem) {
-                    $reversedDiffItems[] = $diffService->getReverseDiffItem($diffItem);
-                }
-
-                $dotCommit = new DomainObjectTypeCommit($undoCommit->getCommitId(), $typeId, $reversedDiffItems);
-                $persistenceStore->storeDomainObjectTypeCommit($dotCommit);
+            $reversedDiffItems = [];
+            foreach (array_reverse($domainObjectTypeCommit->getDiffItems()) as $diffItem) {
+                $reversedDiffItems[] = $diffService->getReverseDiffItem($diffItem);
             }
 
-            $this->revertCommitOnBranchViews($branch, $commit);
-
+            $dotCommit = new DomainObjectTypeCommit($undoCommit->getCommitId(), $typeId, $reversedDiffItems);
+            $persistenceStore->storeDomainObjectTypeCommit($dotCommit);
         }
+
+        $this->performReversedCommitOnBranchViews($branch, $commit);
 
         return $undoCommit;
     }

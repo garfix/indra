@@ -3,6 +3,8 @@
 namespace indra\storage;
 
 use indra\diff\AttributeValuesChanged;
+use indra\diff\BranchMerged;
+use indra\diff\BranchSplit;
 use indra\diff\DiffItem;
 use indra\diff\ObjectAdded;
 use indra\diff\ObjectRemoved;
@@ -543,9 +545,71 @@ class MySqlPersistenceStore implements PersistenceStore
                 WHERE id = " . $db->esc($diffItem->getObjectId()) . "
             ");
 
+        } elseif ($diffItem instanceof BranchMerged) {
+
+            // load all changes of this type of the merged branch
+            $dotCommits = $this->loadDotCommits($diffItem->getCommitIds(), $tableView->getTypeId());
+
+            foreach ($dotCommits as $dotCommit) {
+                foreach ($dotCommit->getDiffItems() as $diffItem) {
+                    $this->processDiffItem($tableView, $diffItem);
+                }
+            }
+
+        } elseif ($diffItem instanceof BranchSplit) {
+
+            $diffService = new DiffService();
+
+            // load all changes of this type of the merged branch, and reverse their actions
+
+            /** @var DomainObjectTypeCommit[] $dotCommits */
+            $dotCommits = array_reverse($this->loadDotCommits($diffItem->getCommitIds(), $tableView->getTypeId()));
+
+            foreach ($dotCommits as $dotCommit) {
+                foreach ($dotCommit->getDiffItems() as $diffItem) {
+                    $this->processDiffItem($tableView, $diffService->getReverseDiffItem($diffItem));
+                }
+            }
+
         } else {
             throw new DiffItemClassNotRecognizedException();
         }
+    }
+
+    /**
+     * @param array $commitIds
+     * @param $typeId
+     * @return DomainObjectTypeCommit[]
+     * @throws DataBaseException
+     * @throws DiffItemClassNotRecognizedException
+     */
+    private function loadDotCommits(array $commitIds, $typeId)
+    {
+        $db = Context::getDB();
+        $serializer = new DiffService();
+
+        $rows = $db->queryMultipleRows("
+            SELECT commit_id, diff
+            FROM indra_commit_type
+            WHERE commit_id IN (" . $db->escForIn($commitIds) . ") AND `type_id` = " . $db->esc($typeId) . "
+        ");
+
+
+        $unorderedDotCommits = [];
+
+        foreach ($rows as $row) {
+
+            $diffItems = $serializer->deserializeDiffItems($row['diff']);
+            $unorderedDotCommits[$row['commit_id']] = new DomainObjectTypeCommit($row['commit_id'], $typeId, $diffItems);
+        }
+
+        // return commit ids in the same order they entered the function
+        $dotCommits = [];
+        foreach ($commitIds as $commitId) {
+            $dotCommits[] = $unorderedDotCommits[$commitId];
+        }
+
+        return $dotCommits;
     }
 
     public function cloneBranchView(BranchView $newBranchView, BranchView $oldBranchView)

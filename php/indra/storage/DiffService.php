@@ -3,6 +3,8 @@
 namespace indra\storage;
 
 use indra\diff\AttributeValuesChanged;
+use indra\diff\BranchMerged;
+use indra\diff\BranchSplit;
 use indra\diff\DiffItem;
 use indra\diff\ObjectAdded;
 use indra\diff\ObjectRemoved;
@@ -36,6 +38,12 @@ class DiffService
                 $value['class'] = 'ObjectRemoved';
                 $value['object'] = $diffItem->getObjectId();
                 $value['attributes'] = $diffItem->getAttributeValues();
+            } elseif ($diffItem instanceof BranchMerged) {
+                $value['class'] = 'BranchMerged';
+                $value['commits'] = $diffItem->getCommitIds();
+            } elseif ($diffItem instanceof BranchSplit) {
+                $value['class'] = 'BranchSplit';
+                $value['commits'] = $diffItem->getCommitIds();
             } else {
                 throw new DiffItemClassNotRecognizedException();
             }
@@ -62,6 +70,12 @@ class DiffService
             } elseif ($class == 'ObjectRemoved') {
                 $diffItem = new ObjectRemoved($value['object'], $value['attributes']);
                 $diffItems[] = $diffItem;
+            } elseif ($class == 'BranchMerged') {
+                $diffItem = new BranchMerged($value['commits']);
+                $diffItems[] = $diffItem;
+            } elseif ($class == 'BranchSplit') {
+                $diffItem = new BranchSplit($value['commits']);
+                $diffItems[] = $diffItem;
             } else {
                 throw new DiffItemClassNotRecognizedException();
             }
@@ -86,6 +100,14 @@ class DiffService
 
             $reversedAttributeValues = $this->reverseAttributes($diffItem->getAttributeValues());
             return new ObjectAdded($diffItem->getObjectId(), $reversedAttributeValues);
+
+        } elseif ($diffItem instanceof BranchMerged) {
+
+            return new BranchSplit($diffItem->getCommitIds());
+
+        } elseif ($diffItem instanceof BranchSplit) {
+
+            return new BranchMerged($diffItem->getCommitIds());
 
         } else {
             throw new DiffItemClassNotRecognizedException();

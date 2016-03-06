@@ -131,7 +131,7 @@ class RevisionTest extends Base
         $customerModel->saveCustomer($customer);
         $domain->commit('Add customer Dr. Atkinson');
 
-        // branch 1 from master
+        // branch 1 from master, with two dependent commits, to test that they will be executed in the right order
 
         $branch1 = $domain->checkoutNewBranch("Branch 1");
 
@@ -148,19 +148,29 @@ class RevisionTest extends Base
         $domain->checkoutBranch($domain->getMasterBranch());
         $mergeCommit = $domain->mergeBranch($branch1, "Merge Branch 1 into Master");
 
-        // pre-check
+        // check the merge
 
         $domain->checkoutBranch($domain->getMasterBranch());
         $customer1 = $customerModel->loadCustomer($customer->getId());
         $this->assertSame("Mrs. Jones", $customer1->getName());
 
-        // revert merge
+        // revert merge (i.e. split)
 
-        $domain->revertCommit($mergeCommit);
+        $revertCommit = $domain->revertCommit($mergeCommit);
 
-        // after-check
+        // test that the merge has been undone
 
         $customer2 = $customerModel->loadCustomer($customer->getId());
         $this->assertSame("Dr. Atkinson", $customer2->getName());
+
+        // now revert the split action
+        // this is a most improbable event, but by checking such cases we find more robust data structures
+
+        $domain->revertCommit($revertCommit);
+
+        // check that the situation is the same as that cause by the merge
+
+        $customer3 = $customerModel->loadCustomer($customer->getId());
+        $this->assertSame("Mrs. Jones", $customer3->getName());
     }
 }

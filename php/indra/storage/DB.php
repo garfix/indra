@@ -34,6 +34,22 @@ class DB
     }
 
     /**
+     * @param array $values
+     * @return string
+     * @throws DataBaseException
+     */
+    public function escForIn(array $values)
+    {
+        $esc = "";
+
+        foreach ($values as $value) {
+            $esc .= ($esc === "" ? "" : ", ") . $this->esc($value);
+        }
+
+        return $esc;
+    }
+
+    /**
      * @param $query
      * @return bool|\mysqli_result
      * @throws DataBaseException
